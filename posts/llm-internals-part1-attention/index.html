@@ -192,80 +192,21 @@ td b{color:var(--ink)}
 </head>
 <body>
 <div id="deck">
-
 <!-- 0 · title -->
 <section class="title">
   <p class="kicker">Inside an autoregressive LLM</p>
   <h1>Part 1: The attention block</h1>
   <p class="sub">How a token finds out what the other tokens are saying: one matrix at a time, asking <em>why</em> at every step.</p>
   <p class="by">Ashwin</p>
+  <p class="small" style="margin-top:8px">New here? The <a href="../llm-internals-intro/">Introduction</a> covers what a language model is, tokens and embeddings, and the whole model from a distance.</p>
   <p class="hint"><span class="kbd">→</span> or <span class="kbd">space</span> to advance &nbsp;|&nbsp; <span class="kbd">?</span> for all keys</p>
 </section>
 
-<!-- 1a · the three words in the title -->
-<section>
-  <p class="kicker">Before we start</p>
-  <h1>The three words in the title</h1>
-  <p class="sub">LLM stands for <em>large language model</em>; <em>autoregressive</em> says how it writes.</p>
-  <div class="stack">
-    <div class="card frag"><h2>Language model (the LM)</h2><p>A program that, given some text, returns a probability for what comes next. It is made by <strong>training</strong>: reading a huge amount of text and nudging the program's numbers, again and again, so that its guesses about the next <strong>token</strong> (a word, or a piece of one; slide <span class="ref" data-ref="s-tokens"></span>) get better.</p></div>
-    <div class="card frag"><h2>Large (the first L)</h2><p>The numbers are the parameters, or <strong>learned numbers</strong>, of a <strong>neural network</strong>: one big function built mostly from matrix multiplications, with every entry of every matrix adjustable. GPT-2 small (2019) has 124 million of them; LLaMA-2 7B has 7 billion; the largest today have hundreds of billions.</p></div>
-    <div class="card frag"><h2>Autoregressive</h2><p>It writes one token at a time, and each new token is predicted from everything written so far, its own earlier output included. <em>Auto</em>: its own; <em>regressive</em>: predicting from the past. The next slide shows the loop; the one after places this kind of model among its relatives.</p></div>
-  </div>
-</section>
-
-<!-- 1 · what an LLM does -->
-<section>
-  <p class="kicker">Before we start</p>
-  <h1>A language model guesses the next token</h1>
-  <div class="dg" id="dg-loop"></div>
-  <div class="cols" style="margin-top:8px">
-    <div class="col"><p>Feed it text and it returns a probability for every possible next token. Above: GPT-2 small, given this sentence without its last word, bets on <em>too</em>, <em>so</em>, <em>trying</em>. (<em>hungry</em> is 13th, at 0.9%.)</p>
-    <p class="frag" data-order="3">This series opens that transformer box. Part 1 takes one of the two blocks inside its repeated layer (picture on slide <span class="ref" data-ref="s-arch"></span>).</p></div>
-    <div class="col"><p class="frag" data-order="1" data-target="#dg-loop .hl-loop">Pick one, append it, run again. That loop is “autoregressive” in action: each new token is predicted from the text so far, the model's own picks included. A chat reply is this loop run a few hundred times.</p>
-    <p class="frag" data-order="2">The network inside the box is a <strong>transformer</strong>, the design from 2017 that nearly every language model now uses.</p></div>
-  </div>
-</section>
-
-<!-- 1b · the family -->
-<section>
-  <p class="kicker">Before we start</p>
-  <h1>Where this kind of model sits in the family</h1>
-  <div class="dg" id="dg-family"></div>
-  <div class="cols" style="margin-top:4px">
-    <div class="col card frag"><h2>Encoder-only</h2><p>BERT (2018). An <em>encoder</em> is a network that reads: the whole text at once, every token looking at every other, before and after. Good at labelling and search; it does not write text.</p></div>
-    <div class="col card frag"><h2>Encoder-decoder</h2><p>The original 2017 transformer. An encoder reads the input, then a <em>decoder</em>, a second network, writes the output. Built for translation.</p></div>
-    <div class="col card frag" style="border-color:rgba(126,232,200,.5)"><h2 class="c-q">Decoder-only, autoregressive</h2><p>GPT, LLaMA, and the chat assistants built on models like them. One network both reads and writes; each token may look only at itself and the tokens before it. This is what “LLM” usually means today, and what this series is about.</p></div>
-  </div>
-  <p class="note frag">All three share the attention block we are about to build. What lets ours run the loop honestly is one line inside it, the mask, which arrives on slide <span class="ref" data-ref="s-mask"></span>.</p>
-</section>
-
-<!-- 2 · tokens and embeddings -->
-<section id="s-tokens">
-  <p class="kicker">The big picture</p>
-  <h1>From text to numbers: tokens and embeddings</h1>
-  <div class="dg" id="dg-embed"></div>
-  <div class="cols" style="margin-top:8px">
-    <div class="col"><p>A <strong>tokenizer</strong> chops text into pieces from a fixed vocabulary (GPT-2 has 50,257). Common words are one piece; rare ones are split: <span class="mono">un|bel|iev|ably</span>. Each piece is a <strong>token</strong> and gets an id.</p></div>
-    <div class="col"><p class="frag" data-target="#dg-embed .hl-row">Each id picks a row of an <strong>embedding table</strong> <span class="m">E</span>. Nobody designs the rows: they start random and are adjusted by training until tokens used in similar ways sit close together. Stack our nine rows, add position information (GPT-2 does it here), and that is <span class="m">X</span>.</p></div>
-  </div>
-</section>
-
-<!-- 3 · the whole transformer -->
+<!-- 1 · where we are -->
 <section id="s-arch">
-  <p class="kicker">The big picture</p>
-  <h1>The whole transformer, zoomed out</h1>
-  <div class="dg" id="dg-arch"></div>
-  <div class="cols" style="margin-top:6px">
-    <div class="col"><p class="frag">Text goes in on the left, next-token probabilities come out on the right, and in between the same <strong>layer</strong> is repeated <span class="m">N</span> times: GPT-2 small stacks 12, LLaMA-2 7B stacks 32. Each layer is two <strong>blocks</strong>: attention, then MLP.</p></div>
-    <div class="col"><p class="frag" data-target="#dg-arch .hl-attn"><strong>This deck: the attention block.</strong> Part 2 takes the MLP block, Part 3 follows a token up through the layers, Part 4 covers the LM head (no relation to the attention heads inside the block) that turns the last vector into probabilities.</p></div>
-  </div>
-</section>
-
-<!-- 4 · zoom in: one block -->
-<section>
-  <p class="kicker">The big picture</p>
-  <h1>Zooming in: one layer, two blocks</h1>
+  <p class="kicker">Before we start</p>
+  <h1>Where we are: one layer, two blocks</h1>
+  <p class="sub">From the Introduction: text becomes tokens, each token becomes a vector (one row of <span class="m">X</span>), and <span class="m">N</span> layers of the same design, each with its own parameters, are applied one after another. Inside each layer, two blocks.</p>
   <div class="dg" id="dg-block"></div>
   <div class="cols" style="margin-top:6px">
     <div class="col"><p class="frag" data-target="#dg-block .hl-attn"><strong>Attention block:</strong> the tokens exchange information. It is the only place in the whole model where one token's vector can influence another's.</p></div>
@@ -284,19 +225,20 @@ td b{color:var(--ink)}
   <p class="big">Every token enters the model as a vector. On its own, the vector for <em>it</em> knows nothing about cats or mice.</p>
   <p class="big frag">Something has to move information from <em>cat</em> into <em>it</em>.</p>
   <p class="big frag">That something is <strong>attention</strong>. Let's build it one matrix at a time, and ask <em>why</em> at every step.</p>
-  <p class="note">This sentence runs through the whole deck: <em>it</em> is shown in green throughout, the two nouns it might refer to in bold. The real attention patterns later on come from GPT-2 small reading exactly these nine tokens.</p>
+  <p class="note">This sentence runs through the whole deck. The token <em>it</em> is shown in green throughout, and the two nouns it might refer to are in bold. The real numbers later on come from GPT-2 small reading exactly these nine tokens.</p>
 </section>
 
 <!-- 2 · route -->
 <section>
   <p class="kicker">The route</p>
   <h1>Five stops inside the attention block</h1>
+  <p class="sub">The names below are previews; each stop introduces its own.</p>
   <div class="route">
     <div class="step"><div class="n">1</div><h2>Setup</h2><p>The input <span class="m">X</span>, and three matrices made from it: <span class="m">Q</span>, <span class="m">K</span>, <span class="m">V</span></p></div>
     <div class="step"><div class="n">2</div><h2>Scores</h2><p>Every token against every token: <span class="m">S</span> = <span class="m">Q·K<sup>T</sup></span></p></div>
     <div class="step"><div class="n">3</div><h2>Weights</h2><p>Three steps turn scores into weights: divide by √<span class="m">d<sub>k</sub></span>, mask, softmax</p></div>
     <div class="step"><div class="n">4</div><h2>Values</h2><p>Collecting what you paid attention to: multiply by <span class="m">V</span></p></div>
-    <div class="step"><div class="n">5</div><h2>Heads &amp; stream</h2><p>Many heads, <span class="m">W<sub>o</sub></span>, the residual stream, and the whole attention block in one picture</p></div>
+    <div class="step"><div class="n">5</div><h2>Heads &amp; stream</h2><p>Many heads, <span class="m">W<sub>o</sub></span>, adding the result back onto <span class="m">X</span>, and the whole attention block in one picture</p></div>
   </div>
   <p class="small" style="margin-bottom:10px">Coming in later parts</p>
   <div class="soon"><span>Part 2: The MLP block</span><span>Part 3: Token flow through the layers</span><span>Part 4: The language-modelling head</span></div>
@@ -699,7 +641,6 @@ td b{color:var(--ink)}
    ========================================================================= */
 const TOY = {"tokens":["The","cat","chased","the","mouse","because","it","was","hungry"],"X":[[0.1,0.0,0.0,0.9],[0.9,0.8,0.0,0.0],[0.0,0.2,0.9,0.0],[0.1,0.0,0.0,0.9],[0.9,0.7,0.0,0.1],[0.0,0.0,0.1,0.8],[0.6,0.1,0.0,0.3],[0.0,0.0,0.7,0.3],[0.2,0.5,0.3,0.0]],"Wq":[[-1.0,0.9,-0.9,1.0],[-0.8,-0.8,0.6,0.9],[0.1,-0.7,0.6,-0.8],[-0.8,-0.0,-0.6,-0.4]],"Wk":[[-0.8,0.4,-0.1,0.4],[-0.3,0.9,0.8,0.9],[-0.4,-0.0,-0.1,0.8],[0.6,-0.5,0.6,-0.3]],"Wv":[[-1.0,0.3,1.0,0.6],[0.3,-0.5,0.2,-0.6],[0.6,-0.3,-0.7,-0.0],[-0.6,0.5,0.2,0.2]],"Q":[[-0.82,0.09,-0.63,-0.26],[-1.54,0.17,-0.33,1.62],[-0.07,-0.79,0.66,-0.54],[-0.82,0.09,-0.63,-0.26],[-1.54,0.25,-0.45,1.49],[-0.63,-0.07,-0.42,-0.4],[-0.92,0.46,-0.66,0.57],[-0.17,-0.49,0.24,-0.68],[-0.57,-0.43,0.3,0.41]],"K":[[0.46,-0.41,0.53,-0.23],[-0.96,1.08,0.55,1.08],[-0.42,0.18,0.07,0.9],[0.46,-0.41,0.53,-0.23],[-0.87,0.94,0.53,0.96],[0.44,-0.4,0.47,-0.16],[-0.33,0.18,0.2,0.24],[-0.1,-0.15,0.11,0.47],[-0.43,0.53,0.35,0.77]],"V":[[-0.64,0.48,0.28,0.24],[-0.66,-0.13,1.06,0.06],[0.6,-0.37,-0.59,-0.12],[-0.64,0.48,0.28,0.24],[-0.75,-0.03,1.06,0.14],[-0.42,0.37,0.09,0.16],[-0.75,0.28,0.68,0.36],[0.24,-0.06,-0.43,0.06],[0.13,-0.28,0.09,-0.18]],"S_raw":[[-0.41,0.88,0.36,-0.41,0.8,-0.4,0.29,0.07,0.4],[-0.78,1.66,0.68,-0.78,1.5,-0.75,0.54,0.13,0.75],[0.29,-0.79,-0.11,0.29,-0.68,0.29,-0.12,0.13,-0.39],[-0.41,0.88,0.36,-0.41,0.8,-0.4,0.29,0.07,0.4],[-0.81,1.75,0.69,-0.81,1.57,-0.78,0.55,0.12,0.79],[-0.26,0.53,0.25,-0.26,0.48,-0.25,0.2,0.07,0.23],[-0.61,1.38,0.47,-0.61,1.23,-0.59,0.39,0.02,0.64],[0.12,-0.37,-0.02,0.12,-0.31,0.12,-0.03,0.09,-0.19],[-0.09,0.08,0.16,-0.09,0.09,-0.08,0.11,0.12,0.02]],"S":[[-0.29,0.63,0.25,-0.29,0.56,-0.28,0.2,0.05,0.28],[-0.55,1.18,0.48,-0.55,1.06,-0.53,0.38,0.09,0.53],[0.21,-0.56,-0.08,0.21,-0.48,0.2,-0.08,0.09,-0.27],[-0.29,0.63,0.25,-0.29,0.56,-0.28,0.2,0.05,0.28],[-0.57,1.24,0.49,-0.57,1.11,-0.55,0.39,0.08,0.56],[-0.18,0.37,0.18,-0.18,0.34,-0.18,0.14,0.05,0.17],[-0.43,0.98,0.33,-0.43,0.87,-0.42,0.27,0.02,0.45],[0.09,-0.26,-0.01,0.09,-0.22,0.09,-0.02,0.06,-0.13],[-0.06,0.06,0.11,-0.06,0.06,-0.06,0.08,0.09,0.01]],"A":[[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.151,0.849,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.451,0.21,0.339,0.0,0.0,0.0,0.0,0.0,0.0],[0.16,0.402,0.277,0.16,0.0,0.0,0.0,0.0,0.0],[0.061,0.372,0.176,0.061,0.329,0.0,0.0,0.0,0.0],[0.127,0.222,0.182,0.127,0.215,0.128,0.0,0.0,0.0],[0.067,0.273,0.144,0.067,0.246,0.068,0.135,0.0,0.0],[0.138,0.098,0.125,0.138,0.102,0.138,0.124,0.135,0.0],[0.102,0.115,0.121,0.102,0.115,0.102,0.117,0.118,0.109]],"O":[[-0.64,0.48],[-0.66,-0.04],[-0.22,0.06],[-0.3,-0.0],[-0.46,-0.07],[-0.41,0.07],[-0.49,0.03],[-0.36,0.15],[-0.31,0.07]],"A_unmasked":[[0.07,0.174,0.119,0.07,0.163,0.07,0.114,0.098,0.123],[0.042,0.237,0.117,0.042,0.21,0.043,0.106,0.08,0.124],[0.144,0.067,0.108,0.144,0.072,0.142,0.108,0.127,0.089],[0.07,0.174,0.119,0.07,0.163,0.07,0.114,0.098,0.123],[0.04,0.244,0.115,0.04,0.215,0.041,0.104,0.077,0.124],[0.084,0.146,0.12,0.084,0.141,0.084,0.116,0.106,0.119],[0.053,0.217,0.113,0.053,0.194,0.053,0.107,0.083,0.128],[0.125,0.088,0.113,0.125,0.092,0.125,0.112,0.121,0.1],[0.102,0.115,0.121,0.102,0.115,0.102,0.117,0.118,0.109]]};
 const REAL = {"tokens":["The","cat","chased","the","mouse","because","it","was","hungry"],"heads":{"L4H3":{"layer":4,"head":3,"A":[[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.908,0.092,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.073,0.909,0.018,0.0,0.0,0.0,0.0,0.0,0.0],[0.587,0.301,0.082,0.031,0.0,0.0,0.0,0.0,0.0],[0.62,0.028,0.032,0.226,0.094,0.0,0.0,0.0,0.0],[0.11,0.086,0.331,0.141,0.292,0.04,0.0,0.0,0.0],[0.04,0.51,0.019,0.013,0.397,0.013,0.01,0.0,0.0],[0.082,0.233,0.023,0.005,0.494,0.029,0.117,0.017,0.0],[0.029,0.319,0.004,0.005,0.434,0.006,0.152,0.035,0.015]]},"L4H11":{"layer":4,"head":11,"A":[[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.994,0.006,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0]]},"L5H1":{"layer":5,"head":1,"A":[[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.999,0.0,0.001,0.0,0.0,0.0,0.0,0.0,0.0],[0.995,0.004,0.0,0.001,0.0,0.0,0.0,0.0,0.0],[0.996,0.0,0.003,0.0,0.001,0.0,0.0,0.0,0.0],[0.997,0.0,0.0,0.001,0.001,0.001,0.0,0.0,0.0],[0.956,0.0,0.007,0.0,0.0,0.01,0.027,0.0,0.0],[0.987,0.0,0.0,0.0,0.0,0.0,0.007,0.006,0.0],[0.998,0.0,0.0,0.001,0.0,0.0,0.001,0.0,0.0]]}},"repeat":{"tokens":["The","cat","chased","the","mouse","because","it","was","hungry",".","The","cat","chased","the","mouse","because","it","was","hungry"],"L5H1":[[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.999,0.0,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.995,0.004,0.0,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.996,0.0,0.003,0.0,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.997,0.0,0.0,0.001,0.001,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.956,0.0,0.007,0.0,0.0,0.01,0.027,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.987,0.0,0.0,0.0,0.0,0.0,0.007,0.006,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.998,0.0,0.0,0.001,0.0,0.0,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.999,0.0,0.0,0.0,0.0,0.0,0.001,0.0,0.0,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.911,0.085,0.0,0.0,0.002,0.0,0.0,0.0,0.0,0.0,0.002,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.438,0.0,0.559,0.0,0.0,0.001,0.0,0.001,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.256,0.0,0.001,0.735,0.007,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.218,0.003,0.0,0.001,0.773,0.001,0.0,0.0,0.0,0.0,0.0,0.004,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.233,0.0,0.002,0.0,0.002,0.761,0.0,0.001,0.0,0.0,0.0,0.0,0.001,0.0,0.0,0.0,0.0,0.0,0.0],[0.05,0.0,0.0,0.0,0.0,0.0,0.945,0.002,0.001,0.0,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.129,0.0,0.001,0.0,0.0,0.002,0.008,0.752,0.101,0.0,0.0,0.0,0.005,0.0,0.0,0.001,0.002,0.0,0.0],[0.119,0.0,0.0,0.0,0.0,0.0,0.001,0.002,0.875,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.002,0.0],[0.113,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.885,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]]}};
-const INTRO = {"ids":[464,3797,26172,262,10211,780,340,373,14720],"tokens":["The","cat","chased","the","mouse","because","it","was","hungry"],"next":[["too",0.081],["so",0.054],["trying",0.045],["chasing",0.035],["a",0.027],["scared",0.024]],"cat_id":3797,"cat_emb":[0.009999999776482582,0.03700000047683716,0.164000004529953,-0.21899999678134918,0.028999999165534973,-0.09799999743700027],"vocab":50257,"dmodel":768,"npos":1024};   // token ids, next-token probabilities, one embedding row, all from GPT-2 small
 
 /* =========================================================================
    COLOUR
@@ -1020,121 +961,6 @@ put('dg-real', line([realHeat('L4H3',44,{hl:[{type:'row',i:IT,cls:'hl-it',color:
   s += `<text x="0" y="${Y+114}" font-size="15" fill="${C.ink2}"><tspan fill="${C.q}" font-weight="600">Packed:</tspan> independent work folded into one call.</text>`;
   s += `<text x="0" y="${Y+136}" font-size="15" fill="${C.ink2}"><tspan fill="${sep}" font-weight="600">Separate:</tspan> h independent computations that must stay apart, because packing them would sum the heads.</text>`;
   put('dg-pipe', `<svg viewBox="-10 60 1120 240" width="1128" height="242" xmlns="http://www.w3.org/2000/svg">${s}</svg>`);
-}
-
-
-/* ---------------- intro slides ---------------- */
-// 1b · the family of language models: who can look at whom
-{
-  const sq = (x, y, fill, stroke, txt) => `<rect x="${x}" y="${y}" width="26" height="26" rx="5" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>` + (txt ? `<text x="${x+13}" y="${y+18}" font-size="13" text-anchor="middle" fill="${C.ink}">${txt}</text>` : '');
-  const arc = (x1, x2, y, col, both) => { const mid = (x1+x2)/2, h = Math.min(34, Math.abs(x2-x1)*0.45);
-    return `<path d="M${x1},${y} Q${mid},${y-h} ${x2},${y}" fill="none" stroke="${col}" stroke-width="1.6" marker-end="url(#arF)"${both?' marker-start="url(#arF2)"':''}/>`; };
-  let s = `<defs><marker id="arF" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${C.ink2}"/></marker><marker id="arF2" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${C.ink2}"/></marker><marker id="arFq" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${C.q}"/></marker></defs>`;
-  const colW = 362, Y = 96;
-  // encoder-only: middle token looks both ways
-  { const x0 = 40; for (let i=0;i<5;i++) s += sq(x0+i*44, Y, i===2?C.bg3:C.bg2, i===2?C.ink2:C.grid2);
-    [0,1,3,4].forEach(i => { s += arc(x0+2*44+13, x0+i*44+13, Y-2, C.ink2, false); });
-    s += `<text x="${x0+2*44+13}" y="${Y+52}" font-size="13" text-anchor="middle" fill="${C.ink3}">every token sees every token</text>`; }
-  // encoder-decoder
-  { const x0 = colW + 40;
-    for (let i=0;i<3;i++) s += sq(x0+i*32, Y, C.bg2, C.grid2);
-    s += `<rect x="${x0-6}" y="${Y-12}" width="${3*32+6}" height="50" rx="8" fill="none" stroke="${C.ink3}" stroke-dasharray="4 3"/><text x="${x0+45}" y="${Y-18}" font-size="12" text-anchor="middle" fill="${C.ink3}">encoder reads</text>`;
-    s += `<path d="M${x0+3*32+6},${Y+13} H${x0+3*32+40}" stroke="${C.ink2}" stroke-width="1.6" marker-end="url(#arF)"/>`;
-    const x1 = x0 + 3*32 + 50; for (let i=0;i<3;i++) s += sq(x1+i*32, Y, C.bg2, C.grid2, i===2?'?':'');
-    s += `<rect x="${x1-6}" y="${Y-12}" width="${3*32+6}" height="50" rx="8" fill="none" stroke="${C.ink3}" stroke-dasharray="4 3"/><text x="${x1+45}" y="${Y-18}" font-size="12" text-anchor="middle" fill="${C.ink3}">decoder writes</text>`;
-    s += `<text x="${x0+100}" y="${Y+52}" font-size="13" text-anchor="middle" fill="${C.ink3}">reads the input, then writes the output</text>`; }
-  // decoder-only: each token looks back only
-  { const x0 = 2*colW + 40; for (let i=0;i<5;i++) s += sq(x0+i*44, Y, i===3?C.bg3:C.bg2, i===3?C.q:(i===4?C.v:C.grid2), i===4?'?':'');
-    [0,1,2].forEach(i => { s += arc(x0+3*44+13, x0+i*44+13, Y-2, C.q, false).replace('url(#arF)','url(#arFq)'); });
-    { const cx = x0+3*44+13; s += `<path d="M${cx+6},${Y-2} C${cx+22},${Y-30} ${cx-14},${Y-30} ${cx-4},${Y-4}" fill="none" stroke="${C.q}" stroke-width="1.6" marker-end="url(#arFq)"/>`; }
-    s += `<text x="${x0+2*44+13}" y="${Y+52}" font-size="13" text-anchor="middle" fill="${C.ink3}">each token sees itself and what came before</text>`; }
-  put('dg-family', `<svg viewBox="0 40 ${3*colW} 120" width="1128" height="${Math.round(1128*120/(3*colW))}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`);
-}
-
-// 1 · the next-token loop
-{
-  const chips = INTRO.tokens.slice(0, 8); let s = ''; let x = 0;
-  const chipW = t => Math.max(34, t.length * 9.2 + 18);
-  chips.forEach((t) => { const w = chipW(t); s += `<rect x="${x}" y="68" width="${w}" height="34" rx="8" fill="${C.bg2}" stroke="${C.grid2}"/><text x="${x+w/2}" y="90" font-size="15" text-anchor="middle" fill="${C.ink}" font-weight="500">${esc(t)}</text>`; x += w + 6; });
-  const qx = x; s += `<g class="hl hl-loop"><rect x="${qx}" y="68" width="34" height="34" rx="8" fill="none" stroke="${C.v}" stroke-dasharray="4 3"/><text x="${qx+17}" y="90" font-size="15" text-anchor="middle" fill="${C.v}" font-weight="600">?</text></g>`; x += 40;
-  const inW = x - 6;
-  s += `<text x="${inW/2}" y="52" font-size="13" text-anchor="middle" fill="${C.ink3}">input so far (8 tokens)</text>`;
-  const bx = inW + 34;
-  s += `<path d="M${inW+4},85 H${bx-4}" stroke="${C.ink2}" stroke-width="2" marker-end="url(#arL)"/>`;
-  s += `<defs><marker id="arL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${C.ink2}"/></marker></defs>`;
-  s += `<rect x="${bx}" y="46" width="170" height="78" rx="12" fill="${C.bg2}" stroke="${C.q}" stroke-width="1.5"/><text x="${bx+85}" y="80" font-size="18" text-anchor="middle" fill="${C.ink}" font-weight="600">transformer</text><text x="${bx+85}" y="104" font-size="13" text-anchor="middle" fill="${C.ink3}">this series</text>`;
-  const px = bx + 170 + 34;
-  s += `<path d="M${bx+174},85 H${px-4}" stroke="${C.ink2}" stroke-width="2" marker-end="url(#arL)"/>`;
-  s += `<text x="${px}" y="30" font-size="13" fill="${C.ink3}">next-token probability (top 6 of 50,257 possible)</text>`;
-  const bw = 150; INTRO.next.forEach(([t,p],i) => { const y = 42 + i*22;
-    s += `<text x="${px+58}" y="${y+13}" font-size="14" text-anchor="end" fill="${C.ink}">${esc(t)}</text><rect x="${px+66}" y="${y+2}" width="${Math.max(3, p/0.09*bw)}" height="14" rx="3" fill="${C.q}" fill-opacity="${i===0?1:.55}"/><text x="${px+72+p/0.09*bw}" y="${y+13}" font-size="13" fill="${C.ink2}" class="mono">${(p*100).toFixed(1)}%</text>`; });
-  // the loop arrow (fragment)
-  s += `<g class="hl hl-loop"><path d="M${px+40},182 V196 H${qx+17} V112" stroke="${C.v}" stroke-width="2" fill="none" stroke-dasharray="6 5" marker-end="url(#arV)"/><text x="${(px+40+qx+17)/2}" y="213" font-size="14" text-anchor="middle" fill="${C.v}" font-weight="600">pick one, append it, run again</text></g>`;
-  s += `<defs><marker id="arV" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${C.v}"/></marker></defs>`;
-  put('dg-loop', `<svg viewBox="-4 20 ${px+bw+110} 200" width="1128" height="${Math.round(1128*200/(px+bw+110))}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`);
-}
-
-// 2 · tokens → ids → embedding rows
-{
-  let s = ''; let x = 0;
-  const chipW = t => Math.max(34, t.length * 9.2 + 18);
-  INTRO.tokens.forEach((t,i) => { const w = chipW(t); const hero = t === 'cat';
-    s += `<rect x="${x}" y="40" width="${w}" height="32" rx="8" fill="${C.bg2}" stroke="${hero?C.ink2:C.grid2}"/><text x="${x+w/2}" y="61" font-size="15" text-anchor="middle" fill="${C.ink}" font-weight="${hero?700:500}">${esc(t)}</text>`;
-    s += `<text x="${x+w/2}" y="94" font-size="13" text-anchor="middle" fill="${hero?C.ink:C.ink3}" class="mono">${INTRO.ids[i]}</text>`; x += w + 6; });
-  s += `<text x="0" y="24" font-size="13" fill="${C.ink3}">tokenizer → token ids</text>`;
-  // embedding table
-  const ex = 40, ey = 128, ew = 300, eh = 128; const rows = 12;
-  s += `<g class="hl hl-row"><text x="${ex+ew/2}" y="${ey-8}" font-size="15" text-anchor="middle" fill="${C.ink}" font-weight="600">E   [50,257 × 768]</text>`;
-  s += `<path d="M${ex-6},${ey-4} h-8 v${eh+8} h8 M${ex+ew+6},${ey-4} h8 v${eh+8} h-8" fill="none" stroke="${C.ink2}" stroke-width="2.5"/>`;
-  for (let r=0;r<rows;r++){ const yy = ey + r*(eh/rows); for (let c=0;c<20;c++) s += `<circle cx="${ex+8+c*15}" cy="${yy+5}" r="1.5" fill="${C.ink3}"/>`; }
-  s += `<text x="${ex+ew/2}" y="${ey+eh+22}" font-size="13" text-anchor="middle" fill="${C.ink3}">one row per token in the vocabulary</text></g>`;
-  const ry = ey + 5*(eh/rows) - 2;
-  s += `<rect x="${ex-2}" y="${ry-2}" width="${ew+4}" height="14" rx="2" fill="${C.q}" fill-opacity=".18" stroke="${C.q}" stroke-width="2" class="hl hl-row"/>`;
-  s += `<text x="${ex-14}" y="${ry+9}" font-size="12" text-anchor="end" fill="${C.q}" class="hl hl-row mono">3797</text>`;
-  // arrow from cat id to row
-  s += `<path d="M${chipW('The')+6+chipW('cat')/2},100 V116 H${ex-30} V${ry+5} H${ex-16}" fill="none" stroke="${C.q}" stroke-width="1.5" stroke-dasharray="4 4" class="hl hl-row"/>`;
-  // extracted vector
-  const vx = ex + ew + 60, vy = ey + 10;
-  s += `<g class="hl hl-row"><path d="M${ex+ew+10},${ry+5} H${vx-8}" stroke="${C.q}" stroke-width="1.5" marker-end="url(#arQ)"/>`;
-  s += `<defs><marker id="arQ" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${C.q}"/></marker></defs>`;
-  s += `<text x="${vx}" y="${vy}" font-size="14" fill="${C.ink}" font-weight="600">row 3797 = the vector for <tspan font-weight="700">cat</tspan></text>`;
-  const vals = INTRO.cat_emb.map(v => (v<0?'−':'')+Math.abs(v).toFixed(3));
-  s += `<text x="${vx}" y="${vy+26}" font-size="14" fill="${C.ink2}" class="mono">[ ${vals.join(', ')}, … ]</text><text x="${vx}" y="${vy+46}" font-size="12" fill="${C.ink3}">768 numbers, learned (a width we will call d_model)</text>`;
-  // similarity list
-  const sims = [['dog',0.55],['kitten',0.50],['mouse',0.35],['chased',0.31],['because',0.23],['the',0.21]];
-  const sx = vx + 420;
-  s += `<text x="${sx}" y="${vy}" font-size="13" fill="${C.ink3}">closeness to other rows (1 = same direction)</text>`;
-  sims.forEach(([t,v],i) => { const yy = vy + 8 + i*17; s += `<text x="${sx+58}" y="${yy+11}" font-size="13" text-anchor="end" fill="${C.ink}">${t}</text><rect x="${sx+66}" y="${yy+2}" width="${v*220}" height="11" rx="2" fill="${C.q}" fill-opacity="${.35+v*.9}"/><text x="${sx+72+v*220}" y="${yy+11}" font-size="12" fill="${C.ink2}" class="mono">${v.toFixed(2)}</text>`; });
-  s += `</g>`;
-  put('dg-embed', `<svg viewBox="-4 8 1130 288" width="1128" height="288" xmlns="http://www.w3.org/2000/svg">${s}</svg>`);
-}
-
-// 3 · whole transformer
-{
-  const box = (x,y,w,h,title,sub,stroke,fill,cls) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${fill||C.bg2}" stroke="${stroke||C.grid2}" stroke-width="1.5" class="${cls||''}"/><text x="${x+w/2}" y="${y+h/2+(sub?-4:6)}" font-size="16" text-anchor="middle" fill="${C.ink}" font-weight="600">${title}</text>${sub?`<text x="${x+w/2}" y="${y+h/2+16}" font-size="12" text-anchor="middle" fill="${C.ink3}">${sub}</text>`:''}`;
-  const arr = (x1,x2,y) => `<path d="M${x1},${y} H${x2}" stroke="${C.ink2}" stroke-width="2" fill="none" marker-end="url(#arA)"/>`;
-  const Y = 100, H = 64; let s = `<defs><marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${C.ink2}"/></marker></defs>`;
-  let x = 0;
-  const step = (w, title, sub) => { const x0 = x; s += box(x, Y, w, H, title, sub); x += w; s += arr(x, x+26, Y+H/2); x += 28; return x0 + w/2; };
-  step(80, 'text', ''); step(100, 'tokenizer', 'ids'); step(150, 'embedding', '+ position');
-  const bx = x, bw = 320;
-  for (let i=2;i>=0;i--){ s += `<rect x="${bx+i*8}" y="${Y-8-i*8}" width="${bw}" height="${H+16}" rx="12" fill="${C.bg2}" stroke="${C.ink3}" stroke-width="1.5"/>`; }
-  s += `<text x="${bx+bw/2+8}" y="${Y-38}" font-size="13" text-anchor="middle" fill="${C.ink2}" font-weight="600">one layer, repeated N times: 12 in GPT-2 small, 32 in LLaMA-2 7B</text>`;
-  s += box(bx+14, Y+4, 140, H-8, 'attention', 'tokens exchange info', C.q, C.bg, 'attn-box');
-  s += arr(bx+154, bx+176, Y+H/2);
-  s += box(bx+178, Y+4, 128, H-8, 'MLP', 'each token alone', C.grid2, C.bg);
-  s += `<rect x="${bx+10}" y="${Y}" width="148" height="${H}" rx="12" fill="${C.q}" fill-opacity=".14" stroke="${C.q}" stroke-width="3" class="hl hl-attn"/>`;
-  x = bx + bw + 16; s += arr(x, x+26, Y+H/2); x += 28;
-  step(118, 'norm (LN)', 'one more in each block'); const lmx = step(170, 'LM head', 'vector → next-token scores');
-  s += box(x, Y, 130, H, 'probabilities', 'over 50,257 tokens'); x += 130;
-  // part tags: a tick down from the component, then the label
-  const tag = (cx, txt, col, cls, dy) => `<path d="M${cx},${Y+H+2} V${Y+H+14+dy}" stroke="${col}" stroke-width="1.5" class="${cls||''}"/><text x="${cx}" y="${Y+H+30+dy}" font-size="13" text-anchor="middle" fill="${col}" font-weight="600" class="${cls||''}">${txt}</text>`;
-  s += tag(bx+84, 'Part 1: this deck', C.q, 'hl hl-attn', 0);
-  s += tag(bx+242, 'Part 2', C.ink3, 'hl hl-attn', 0);
-  s += tag(lmx, 'Part 4', C.ink3, 'hl hl-attn', 0);
-  s += `<g class="hl hl-attn"><path d="M${bx-2},${Y+H+52} H${bx+bw+18}" stroke="${C.ink3}" stroke-width="1.5"/><path d="M${bx-2},${Y+H+46} V${Y+H+58} M${bx+bw+18},${Y+H+46} V${Y+H+58}" stroke="${C.ink3}" stroke-width="1.5"/>`;
-  s += `<text x="${bx+bw/2+8}" y="${Y+H+76}" font-size="13" text-anchor="middle" fill="${C.ink3}" font-weight="600">Part 3: a token's journey up through all N layers</text></g>`;
-  put('dg-arch', `<svg viewBox="-4 44 ${x+8} 210" width="1128" height="${Math.round(1128*210/(x+8))}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`);
 }
 
 // 4 · one block, two branches

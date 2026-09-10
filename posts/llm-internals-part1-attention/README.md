@@ -1,6 +1,6 @@
 # Inside an Autoregressive LLM, Part 1: The attention block
 
-A single-file, dependency-free HTML slide deck (37 slides). It opens by unpacking the title (what a language model is, what "large" and "autoregressive" mean, the next-token loop, and where decoder-only models sit next to encoder-only and encoder-decoder ones), then a big picture (tokens and embeddings, the whole transformer zoomed out, one layer zoomed in), then builds the attention block one matrix at a time, using one running sentence (*The cat chased the mouse because it was hungry*) and real numbers from GPT-2 small: its next-token bets, token ids, an embedding row, and attention patterns. Every section divider carries a "you are here" strip that places the current stop inside the attention block and the block inside the model.
+A single-file, dependency-free HTML slide deck (32 slides). It assumes the series Introduction (a separate deck in `posts/llm-internals-intro/`: what a language model is, the next-token loop, the model family, tokens and embeddings, the whole transformer), recaps the one picture it needs (one layer, two blocks), then builds the attention block one matrix at a time, using one running sentence (*The cat chased the mouse because it was hungry*) and real attention patterns from GPT-2 small. Every section divider carries a "you are here" strip that places the current stop inside the attention block and the block inside the model.
 
 `index.html` is the whole deck: HTML, CSS, JavaScript and data in one file. No build step, no framework. Open it in a browser or host it anywhere static files are served.
 
@@ -44,11 +44,11 @@ Everything lives in `index.html`, top to bottom: `<style>`, then one `<section>`
 
 Look at the `// 5 · X · Wq = Q` block for the smallest example and copy from there. Colours are in the `C` object and the CSS `:root` variables; sequential heat-map colour is `SEQ`, the signed-score palette is `DIV`.
 
-**Data.** `INTRO` holds the intro facts (token ids, GPT-2's next-token probabilities after the sentence minus its last word, the first six numbers of the embedding row for "cat"). `TOY` holds the hand-checkable example (d_model = 4, h = 2, d_k = 2): the input `X`, the weight matrices, `Q`, `K`, `V`, raw and scaled scores `S_raw`/`S`, the attention matrices `A_unmasked`/`A`, and the output `O`. `REAL` holds GPT-2 small attention matrices for layer 4 head 3, layer 4 head 11 and layer 5 head 1 on the sentence, plus layer 5 head 1 on the sentence repeated twice (the induction-head slide). Values are rounded to three decimals.
+**Data.** `TOY` holds the hand-checkable example (d_model = 4, h = 2, d_k = 2): the input `X`, the weight matrices, `Q`, `K`, `V`, raw and scaled scores `S_raw`/`S`, the attention matrices `A_unmasked`/`A`, and the output `O`. `REAL` holds GPT-2 small attention matrices for layer 4 head 3, layer 4 head 11 and layer 5 head 1 on the sentence, plus layer 5 head 1 on the sentence repeated twice (the induction-head slide). Values are rounded to three decimals.
 
 ## Where the real numbers come from
 
-The GPT-2 matrices were produced with a plain-numpy forward pass of GPT-2 small (124M); see `tools/gpt2_attention_numpy.py`, which reads the weights from the ONNX Model Zoo copy of GPT-2 and the original BPE tokenizer files. The same numbers come out of the standard route, which is the easier one if you want to try other sentences or models:
+The GPT-2 matrices (and the Introduction deck's token ids, next-token probabilities and embedding row) were produced with a plain-numpy forward pass of GPT-2 small (124M); see `tools/gpt2_attention_numpy.py`, which reads the weights from the ONNX Model Zoo copy of GPT-2 and the original BPE tokenizer files. The same numbers come out of the standard route, which is the easier one if you want to try other sentences or models:
 
 ```python
 from transformers import GPT2TokenizerFast, GPT2LMHeadModel

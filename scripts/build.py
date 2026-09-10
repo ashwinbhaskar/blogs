@@ -6,7 +6,8 @@
 
 Each post is a folder under posts/ with a post.json:
     {"title": "...", "date": "YYYY-MM-DD", "summary": "...", "kind": "article" | "deck",
-     "tags": ["..."], "series": {"name": "...", "part": 1}, "updated": "YYYY-MM-DD", "draft": false}
+     "tags": ["..."], "series": {"name": "...", "part": 1, "label": "optional, e.g. Introduction", "title": "optional short title for the series card"},
+     "updated": "YYYY-MM-DD", "draft": false}
 An article has an index.md next to it (Markdown, converted here). A deck has a self-contained index.html,
 copied as-is together with everything else in its folder.
 """
@@ -46,6 +47,11 @@ def page(title, description, content, canonical, og_type="website", home=False):
                base=BASE, site_name=esc(SITE["name"]), author=esc(SITE["author"]), github=SITE["github"],
                repo=SITE["repo"], year=datetime.date.today().year, content=content, og_type=og_type,
                nav_home_current=' aria-current="page"' if home else "")
+
+
+def part_label(s):
+    """How a series entry is shown: "Part 3", or its own label ("Introduction")."""
+    return s.get("label") or f"Part {s['part']}"
 
 
 def chips(tags):
@@ -93,7 +99,8 @@ def load_posts():
         if m.get("draft"):
             continue
         posts.append(m)
-    posts.sort(key=lambda p: (p.get("date", ""), p["slug"]), reverse=True)
+    # newest first; on the same day, series order (introduction before part 1)
+    posts.sort(key=lambda p: (p["date"], -p.get("series", {}).get("part", 0), p["slug"]), reverse=True)
     return posts
 
 
@@ -126,7 +133,7 @@ def build_article(post, posts):
     text = re.sub(r"\A\s*#(?!#)[^\n]*\n", "", text)   # a leading "# Title" is for editors; the page heading comes from post.json
     body = render_markdown(text)
     s = post.get("series")
-    kicker = f'<p class="kicker">{esc(s["name"])} · Part {s["part"]}</p>' if s else ""
+    kicker = f'<p class="kicker">{esc(s["name"])} · {esc(part_label(s))}</p>' if s else ""
     updated = f'<span>updated <time datetime="{post["updated"]}">{pretty(post["updated"])}</time></span>' if post.get("updated") else ""
     content = tpl("article.html", kicker=kicker, title=esc(post["title"]), summary=esc(post["summary"]), date=post["date"],
                   date_pretty=pretty(post["date"]), updated=updated, tag_chips=chips(post["tags"]), body=body,
@@ -155,7 +162,8 @@ def series_section(posts):
     cards = []
     for name, info in defs.items():
         members = sorted([p for p in posts if p.get("series", {}).get("name") == name], key=lambda p: p["series"]["part"])
-        items = [f'<li><span class="part">Part {p["series"]["part"]}</span><a href="{p["href"]}">{esc(p["title"])}</a></li>' for p in members]
+        # inside the card the series name is already given, so a short title ("The attention block") reads better than the full one
+        items = [f'<li><span class="part">{esc(part_label(p["series"]))}</span><a href="{p["href"]}">{esc(p["series"].get("title") or p["title"])}</a></li>' for p in members]
         n = max([p["series"]["part"] for p in members], default=0)
         for planned in info.get("planned", []):
             m = re.match(r"^Part\s+(\d+):\s*(.*)$", planned)   # "Part 2: The MLP block" keeps its number; a bare title continues the count
@@ -181,7 +189,7 @@ def build_home(posts):
     cards = []
     for p in posts:
         s = p.get("series")
-        series_label = f'<span>{esc(s["name"])} · Part {s["part"]}</span>' if s else ""
+        series_label = f'<span>{esc(s["name"])} · {esc(part_label(s))}</span>' if s else ""
         cards.append(tpl("post-card.html", tags_attr=esc(" ".join(p["tags"])), href=p["href"], title=esc(p["title"]),
                          kind_label=KIND_LABEL[p["kind"]], summary=esc(p["summary"]), date=p["date"],
                          date_pretty=pretty(p["date"]), series_label=series_label, tag_chips=chips(p["tags"])))

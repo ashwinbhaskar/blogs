@@ -120,13 +120,13 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--s-7) 0; }
 .section > h2 { font-size: var(--fs-0); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 var(--s-4); }
 
 /* series strip */
-.series { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); }
+.series { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr)); }
 .series-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-3); padding: var(--s-5); box-shadow: var(--shadow); }
 .series-card h3 { margin: 0 0 var(--s-2); font-size: var(--fs-4); letter-spacing: -0.01em; }
 .series-card p { margin: 0 0 var(--s-4); color: var(--ink-2); font-size: var(--fs-1); }
 .series-card ol { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
-.series-card li { display: flex; align-items: baseline; gap: var(--s-3); font-size: var(--fs-1); }
-.series-card .part { font-family: var(--mono); font-size: var(--fs-0); color: var(--ink-3); flex: 0 0 4em; white-space: nowrap; }
+.series-card li { display: grid; grid-template-columns: 7em 1fr; align-items: baseline; gap: var(--s-3); font-size: var(--fs-1); }
+.series-card .part { font-family: var(--mono); font-size: var(--fs-0); color: var(--ink-3); white-space: nowrap; }
 .series-card .planned { color: var(--ink-3); }
 .series-card .planned::after { content: " (coming)"; font-size: var(--fs-0); }
 

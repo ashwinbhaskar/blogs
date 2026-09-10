@@ -1,0 +1,16 @@
+{
+  "title": "Inside an autoregressive LLM, Introduction: The whole model from a distance",
+  "date": "2026-09-10",
+  "summary": "What a large autoregressive language model is, how it writes one token at a time, where it sits among its relatives, how text becomes vectors, and what each part of this series opens up. 10 slides.",
+  "kind": "deck",
+  "tags": [
+    "llm",
+    "transformers"
+  ],
+  "series": {
+    "name": "LLM internals",
+    "part": 0,
+    "label": "Introduction",
+    "title": "The whole model from a distance"
+  }
+}

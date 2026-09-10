@@ -59,8 +59,10 @@ _site/                    build output, ignored by git
 ```
 
 `title`, `date`, `summary` and `kind` are required. A `series` entry groups posts on the home page and adds
-previous/next links between parts; parts that are not written yet can be listed as `planned` under that series in
-`site.json`. `draft: true` keeps a post out of the build (and therefore off the site) while it is being written.
+previous/next links between parts; `part` orders them, an optional `label` replaces the "Part n" wording
+(the LLM series uses `"part": 0, "label": "Introduction"`), and an optional `title` is the short form shown in
+the series card ("The attention block" rather than the full post title). Parts that are not written yet can be
+listed as `planned` under that series in `site.json`. `draft: true` keeps a post out of the build (and therefore off the site) while it is being written.
 Posts are ordered by `date`, newest first; folder names must be lowercase words joined by hyphens.
 
 ## Changing things
