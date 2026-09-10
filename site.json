@@ -1,0 +1,16 @@
+{
+  "name": "Ashwin's notes",
+  "tagline": "Working notes on how things actually work, one matrix at a time.",
+  "author": "Ashwin",
+  "github": "ashwinbhaskar",
+  "repo": "blogs",
+  "base": "/blogs",
+  "url": "https://ashwinbhaskar.github.io/blogs",
+  "description": "Explanations of LLM internals and other things Ashwin is figuring out.",
+  "series": {
+    "LLM internals": {
+      "description": "Inside an autoregressive LLM, one block at a time, with real GPT-2 numbers.",
+      "planned": ["Part 2: The MLP block", "Part 3: Token flow through the layers", "Part 4: The language-modelling head"]
+    }
+  }
+}

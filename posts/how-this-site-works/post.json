@@ -1,0 +1,7 @@
+{
+  "title": "How this site works",
+  "date": "2026-09-09",
+  "summary": "A colophon: one Python script, Markdown for prose, self-contained HTML for slides, and GitHub Actions to publish. Also a tour of what a post can contain.",
+  "kind": "article",
+  "tags": ["meta"]
+}

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#121820; --bg2:#1a2330; --bg3:#222d3b;
+  --ink:#e9eef4; --ink2:#aab5c3; --ink3:#6f7b8b;
+  --grid:#2a3442; --grid2:#354152;
+  --q:#7ee8c8; --k:#7cc4ff; --v:#f6d56a; --o:#c4b5fd; --bad:#ff8a7a;
+  --h1:#f7a1cf; --h2:#ffb86c; --h3:#b5e07a;
+  --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{background:radial-gradient(1400px 900px at 50% 35%,#1a2330 0%,#121820 60%,#0d1219 100%)}
+#deck{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center}
+#deck>section{position:absolute;inset:0;padding:54px 76px 60px;opacity:0;pointer-events:none;transform:translateY(14px);transition:opacity .38s ease,transform .38s ease}
+#deck>section.active{opacity:1;pointer-events:auto;transform:none}
+
+/* ---------- typography ---------- */
+.kicker{font-size:15px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--q);margin:0 0 10px}
+h1{font-size:42px;font-weight:600;letter-spacing:-.015em;line-height:1.12;margin:0 0 22px;color:var(--ink)}
+h1 .dim{color:var(--ink3);font-weight:500}
+h2{font-size:26px;font-weight:600;margin:0 0 10px}
+p,li{font-size:23px;line-height:1.45;color:var(--ink2);margin:0 0 14px}
+p.big{font-size:28px;color:var(--ink)}
+strong,b{color:var(--ink);font-weight:600}
+em{color:var(--ink);font-style:italic}
+ul{padding-left:26px;margin:0}
+li{margin-bottom:10px}
+.small{font-size:18px;color:var(--ink3)}
+.muted{color:var(--ink3)}
+.sub{font-size:20px;color:var(--ink3);margin:-10px 0 20px}
+a{color:var(--k)}
+.c-q{color:var(--q)} .c-k{color:var(--k)} .c-v{color:var(--v)} .c-o{color:var(--o)} .c-bad{color:var(--bad)}
+.c-h1{color:var(--h1)} .c-h2{color:var(--h2)} .c-h3{color:var(--h3)}
+
+/* math */
+.m{font-family:var(--serif);font-style:italic;font-size:1.06em}
+.m .r{font-style:normal}
+sub,sup{font-size:.62em;line-height:0;font-style:normal;font-family:var(--sans)}
+sub{vertical-align:-.28em} sup{vertical-align:.5em}
+.eq{font-family:var(--serif);font-size:36px;text-align:center;color:var(--ink);margin:14px 0 22px;letter-spacing:.01em}
+.eq i{font-style:italic}
+.eq .op{color:var(--ink3);padding:0 .25em;font-style:normal}
+.eq .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .2em}
+.eq .frac>span{padding:0 .3em}
+.eq .frac>span:first-child{border-bottom:2px solid var(--ink2)}
+.eq .r{font-style:normal}
+.mono{font-family:var(--mono);font-size:.92em;color:var(--ink)}
+.shape{font-family:var(--mono);font-size:19px;color:var(--ink3);white-space:nowrap}
+.kbd{font-family:var(--mono);font-size:15px;border:1px solid var(--grid2);border-bottom-width:2px;border-radius:6px;padding:1px 7px;color:var(--ink2);background:var(--bg2)}
+
+/* ---------- layout helpers ---------- */
+.cols{display:flex;gap:40px;align-items:flex-start}
+.cols.center{align-items:center}
+.col{flex:1;min-width:0}
+.col.narrow{flex:.8}
+.col.wide{flex:1.35}
+.stack{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--bg2);border:1px solid var(--grid);border-radius:14px;padding:18px 22px}
+.card h2{font-size:22px;margin-bottom:6px}
+.card p{font-size:20px;margin:0}
+.card.qkv{min-height:118px}
+.callout{border-left:4px solid var(--q);padding:10px 18px;background:rgba(126,232,200,.06);border-radius:0 12px 12px 0;margin:14px 0}
+.callout p{margin:0;font-size:21px}
+.callout.warn{border-color:var(--bad);background:rgba(255,138,122,.07)}
+.callout.k{border-color:var(--k);background:rgba(124,196,255,.06)}
+.callout.v{border-color:var(--v);background:rgba(246,213,106,.06)}
+.callout.o{border-color:var(--o);background:rgba(196,181,253,.06)}
+.note{position:absolute;left:76px;right:76px;bottom:26px;font-size:16px;color:var(--ink3);margin:0}
+.dg{display:block;margin:6px auto}
+.dg svg{display:block;margin:0 auto;overflow:visible}
+svg text{font-family:var(--sans)}
+svg .mono{font-family:var(--mono)}
+.center-x{text-align:center}
+
+/* token chips */
+.sent{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 26px}
+.tok{font-size:24px;padding:6px 14px;border:1px solid var(--grid2);border-radius:10px;background:var(--bg2);color:var(--ink);font-weight:500}
+.tok.hero{border-color:var(--q);color:var(--q);box-shadow:0 0 0 1px rgba(126,232,200,.3)}
+.tok.cand{border-color:var(--ink2);color:var(--ink);font-weight:600}
+.tok.dim{color:var(--ink3)}
+
+/* fragments */
+.frag{opacity:0;transform:translateY(8px);transition:opacity .4s ease,transform .4s ease}
+.frag.on{opacity:1;transform:none}
+svg .frag{transform:none;transition:opacity .4s ease}
+.hl{opacity:0;transition:opacity .4s ease}
+.hl.on{opacity:1}
+.fade{transition:opacity .4s ease}
+.fade.on{opacity:0}
+.frag.swap{position:absolute;inset:0}
+.h-swap{position:relative}
+.h-swap h1{transition:opacity .4s ease}
+.h-swap h1.b{position:absolute;left:0;top:0;opacity:0;color:var(--q)}
+.h-swap.on h1.a{opacity:0}
+.h-swap.on h1.b{opacity:1}
+.pipe .g{opacity:0;transition:opacity .4s ease}
+.pipe .g.on{opacity:1}
+
+/* title & dividers */
+section.title{display:flex;flex-direction:column;justify-content:center;padding-left:110px}
+section.title .kicker{font-size:18px}
+section.title h1{font-size:64px;max-width:900px;margin-bottom:18px}
+section.title .sub{font-size:26px;color:var(--ink2);max-width:820px;margin:0 0 40px;line-height:1.35}
+section.title .by{font-size:20px;color:var(--ink3)}
+section.title .hint{position:absolute;bottom:40px;left:76px;font-size:16px;color:var(--ink3)}
+section.divider{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding-left:110px}
+section.divider .num{font-family:var(--serif);font-style:italic;font-size:120px;color:var(--q);line-height:1;opacity:.9;margin-bottom:10px}
+section.divider h1{font-size:54px;margin-bottom:10px}
+section.divider p{font-size:26px;color:var(--ink3)}
+.locator{position:absolute;left:76px;bottom:30px}
+.locator svg{display:block}
+.ref{font-variant-numeric:tabular-nums}
+
+/* stepper (route slide) */
+.route{display:flex;gap:14px;margin:30px 0 34px}
+.route .step{flex:1;background:var(--bg2);border:1px solid var(--grid);border-radius:14px;padding:18px 18px 16px;min-height:150px}
+.route .step .n{font-family:var(--serif);font-style:italic;font-size:38px;color:var(--q);line-height:1;margin-bottom:8px}
+.route .step h2{font-size:21px;margin:0 0 6px}
+.route .step p{font-size:17px;margin:0;color:var(--ink3)}
+.soon{display:flex;gap:12px}
+.soon span{font-size:17px;color:var(--ink3);border:1px dashed var(--grid2);border-radius:10px;padding:8px 14px}
+
+/* tables */
+table{border-collapse:collapse;font-size:21px;color:var(--ink2)}
+th{font-weight:600;color:var(--ink3);text-align:left;padding:8px 22px 8px 0;border-bottom:1px solid var(--grid2);font-size:17px;letter-spacing:.04em;text-transform:uppercase}
+td{padding:10px 22px 10px 0;border-bottom:1px solid var(--grid)}
+td.num,th.num{text-align:right;font-family:var(--mono);font-size:20px}
+table.sym td:first-child{white-space:nowrap;padding-right:30px}
+table.sym{width:100%}
+table.sym th{padding:6px 12px 6px 0}
+table.sym td{padding:9px 12px 9px 0;white-space:nowrap}
+table.sym td:nth-child(2){white-space:normal}
+table.sym th.num{text-transform:none;letter-spacing:0;font-size:15px;white-space:nowrap}
+table.sym td.num{padding-left:6px}
+table.sym td.num{padding-left:18px}
+td b{color:var(--ink)}
+
+/* pipeline (follow-one-token) */
+.pipe{font-family:var(--mono);font-size:18px;color:var(--ink2);border-collapse:separate;border-spacing:0 2px}
+.pipe th{font-family:var(--sans);font-size:14px;letter-spacing:.06em;color:var(--ink3);text-transform:none;padding:4px 14px 8px 14px;border:none;text-align:center}
+.pipe th small{display:block;font-size:12px;color:var(--ink3);font-weight:400;letter-spacing:0}
+.pipe td{padding:3px 14px;text-align:center;border:none;background:var(--bg2)}
+.pipe td:first-child{text-align:right;font-family:var(--sans);color:var(--ink);border-radius:8px 0 0 8px}
+.pipe td:last-child{border-radius:0 8px 8px 0}
+.pipe tr.masked.on td{color:var(--ink3)}
+.pipe td.keep{color:var(--ink3);font-family:var(--sans);font-size:15px}
+.pipe tr.masked td.inf{color:var(--bad)}
+.pipe tr.hi td{background:var(--bg3)}
+.pipe .neg{color:var(--bad)} .pipe .pos{color:var(--q)}
+.pipe td{white-space:nowrap}
+.pipe.big{font-size:18px;border-spacing:0 3px}
+.pipe.big td{padding:4px 14px}
+.pipe.big th{font-size:15px}
+
+/* HUD */
+#bar{position:fixed;left:0;bottom:0;height:4px;background:var(--q);width:0;transition:width .3s ease;z-index:5}
+#counter{position:fixed;right:18px;bottom:12px;font-family:var(--mono);font-size:13px;color:var(--ink3);z-index:5}
+#home{position:fixed;left:14px;top:12px;font-family:var(--mono);font-size:13px;color:var(--ink3);text-decoration:none;z-index:5;padding:4px 8px;border-radius:6px}
+#home:hover,#home:focus-visible{color:var(--ink);background:var(--bg2)}
+#help{position:fixed;inset:0;background:rgba(9,13,18,.86);display:none;align-items:center;justify-content:center;z-index:10}
+#help.open{display:flex}
+#help .box{background:var(--bg2);border:1px solid var(--grid2);border-radius:16px;padding:28px 36px;max-width:520px}
+#help h2{margin-bottom:14px}
+#help p{font-size:18px;margin:6px 0;color:var(--ink2)}
+
+/* print: one slide per page, all fragments visible */
+@media print{
+  html,body{overflow:visible;background:#fff}
+  body{background:#121820}
+  #deck{position:static;transform:none!important;width:auto;height:auto}
+  #deck>section{position:relative;opacity:1;transform:none;width:1280px;height:720px;page-break-after:always;break-after:page;background:var(--bg);transition:none}
+  .frag,.hl,.fade,.pipe .g{opacity:1;transform:none;transition:none}
+  .pipe tr.masked td{color:var(--ink3)}
+  .fade.on{opacity:1}
+  .frag.swap,.h-swap h1.b{display:none}
+  #bar,#counter,#help,#home{display:none}
+  @page{size:1280px 720px;margin:0}
+}
+</style>
+</head>
+<body>
+<div id="deck">
+<!-- ===================================================================
+     SLIDES. One <section> per slide, in order. Delete these five and write your own;
+     the engine, counter, progress bar and deep links (#/N and #/N/k) follow automatically.
+     class="title" and class="divider" are the two special layouts.
+     =================================================================== -->
+
+<section class="title">
+  <p class="kicker">{{kicker}}</p>
+  <h1>{{title}}</h1>
+  <p class="sub">{{description}}</p>
+  <p class="by">{{author}}</p>
+  <p class="hint">Press <span class="kbd">→</span> or tap to advance. <span class="kbd">?</span> for keys.</p>
+</section>
+
+<section id="how">
+  <p class="kicker">Stop 1: How this deck works</p>
+  <h1>Reveal one idea at a time</h1>
+  <div class="cols">
+    <div class="col">
+      <ul>
+        <li>Anything with <span class="mono">class="frag"</span> stays hidden until the presenter advances.</li>
+        <li class="frag">Steps reveal in document order. Add <span class="mono">data-order="2"</span> to change the order.</li>
+        <li class="frag">A step can also switch something else on: <span class="mono">data-target="#some-svg .hl-row"</span> adds the class <span class="mono">on</span> to whatever matches.</li>
+        <li class="frag">Refer to another slide by its <span class="mono">id</span> and the number fills itself in: see slide <span class="ref" data-ref="diagram"></span>.</li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <div class="callout frag">
+        <p>Callouts come in five flavours: <span class="mono">.callout</span>, <span class="mono">.k</span>, <span class="mono">.v</span>, <span class="mono">.o</span>, and <span class="mono">.warn</span>.</p>
+      </div>
+      <div class="card frag" style="margin-top:14px">
+        <h2>Cards</h2>
+        <p>For small labelled boxes. Put several in a <span class="mono">.stack</span>.</p>
+      </div>
+    </div>
+  </div>
+  <p class="note">Notes sit at the bottom in small type. Print with <span class="kbd">P</span>: every step is expanded, one slide per page.</p>
+</section>
+
+<section class="divider">
+  <div class="num">2</div>
+  <h1>Dividers mark a new stop</h1>
+  <p>A big italic number, a headline, one line of context.</p>
+</section>
+
+<section id="diagram">
+  <p class="kicker">Stop 2: Diagrams</p>
+  <h1>Matrices are drawn by two helpers</h1>
+  <p class="sub"><span class="mono">matrix({...})</span> draws one bracketed matrix; <span class="mono">line([...])</span> lays several out with operators between them.</p>
+  <div class="dg" id="dg-demo"></div>
+  <p class="frag" data-target="#dg-demo .hl-row">The first step highlights a row of the left matrix.</p>
+  <p class="frag" data-target="#dg-demo .hl-col">The second highlights a column of the right one. Their product is one cell of the result.</p>
+</section>
+
+<section class="title">
+  <p class="kicker">The end</p>
+  <h1>Thanks</h1>
+  <p class="sub">Add links, further reading, or a hand-off to the next part here.</p>
+  <p class="by"><a href="../../">All posts</a></p>
+</section>
+
+</div><!-- /deck -->
+
+<a id="home" href="../../" title="Back to all posts">&larr; All posts</a>
+<div id="bar"></div>
+<div id="counter"></div>
+<div id="help"><div class="box">
+  <h2>Keys</h2>
+  <p><span class="kbd">→</span> <span class="kbd">space</span> <span class="kbd">↓</span> next step / slide</p>
+  <p><span class="kbd">←</span> <span class="kbd">↑</span> previous</p>
+  <p><span class="kbd">Home</span> / <span class="kbd">End</span> first / last slide</p>
+  <p><span class="kbd">F</span> fullscreen &nbsp; <span class="kbd">P</span> print / save as PDF</p>
+  <p><span class="kbd">?</span> or <span class="kbd">Esc</span> close this</p>
+  <p class="small" style="margin-top:12px">Click or tap the right two-thirds of the screen to advance, the left third to go back. The URL tracks the slide, so you can link to any one.</p>
+</div></div>
+
+<script>
+/* =========================================================================
+   COLOUR
+   ========================================================================= */
+const C = {ink:'#e9eef4', ink2:'#aab5c3', ink3:'#6f7b8b', grid:'#2a3442', grid2:'#354152', bg:'#121820', bg2:'#1a2330',
+           q:'#7ee8c8', k:'#7cc4ff', v:'#f6d56a', o:'#c4b5fd', bad:'#ff8a7a', h:['#f7a1cf','#ffb86c','#b5e07a']};
+const hex = h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16));
+const rgb = (r,g,b) => `rgb(${r|0},${g|0},${b|0})`;
+const mix = (a,b,t) => { const A=hex(a),B=hex(b); return rgb(A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t, A[2]+(B[2]-A[2])*t); };
+function ramp(stops){ return t => { t = Math.max(0, Math.min(1, t));
+  for (let i=1;i<stops.length;i++){ if (t <= stops[i][0]) { const [t0,c0]=stops[i-1], [t1,c1]=stops[i]; return mix(c0,c1,(t-t0)/(t1-t0)); } }
+  return stops[stops.length-1][1]; }; }
+// sequential: one hue (mint), dark surface -> light. Values are always printed too.
+const SEQ = ramp([[0,'#1c2532'],[0.35,'#1f6b5d'],[0.7,'#4fd0a0'],[1,'#d8ffef']]);
+const seqText = t => t > 0.55 ? '#0d1a15' : C.ink;
+// diverging for signed scores: coral (−) · neutral · mint (+)
+const DIV = v => v < 0 ? mix('#2a3442','#ff8a7a',Math.min(1,-v)) : mix('#2a3442','#7ee8c8',Math.min(1,v));
+const divText = v => Math.abs(v) > 0.6 ? '#0f141a' : C.ink;
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+// tx('[ Q^1 | Q^2 ]'), tx('W_q^1'), tx('d_{model}'): sub/superscripts as tspans with the baseline restored after each one.
+function tx(s){
+  const segs = []; const re = /([\^_])(\{[^}]*\}|\S)/g; let last = 0, m;
+  while ((m = re.exec(s))){ if (m.index > last) segs.push({t: s.slice(last, m.index), l: 0});
+    segs.push({t: m[2][0] === '{' ? m[2].slice(1, -1) : m[2], l: m[1] === '^' ? 1 : -1}); last = re.lastIndex; }
+  if (last < s.length) segs.push({t: s.slice(last), l: 0});
+  const off = l => l === 1 ? -7 : l === -1 ? 4 : 0; let cur = 0, out = '';
+  segs.forEach(g => { out += `<tspan dy="${off(g.l) - off(cur)}"${g.l ? ' font-size="0.68em"' : ''}>${esc(g.t)}</tspan>`; cur = g.l; });
+  return out;
+}
+const DMODEL = 'd_{model}', DK_ = 'd_k';
+
+/* =========================================================================
+   SVG HELPERS
+   ========================================================================= */
+// A bracketed matrix. Returns {svg, w, h}. All coordinates local to (0,0).
+function matrix(o){
+  const cw = o.cw || 26, ch = o.ch || cw, r = o.r, c = o.c;
+  const W = c*cw, H = r*ch;
+  const labelW = o.rowLabels ? (o.labelW || 78) : 0;
+  const padL = labelW + (o.rowDim && !o.rowLabels ? 34 : 0) + (o.rowDim && o.rowLabels ? 40 : 0);
+  const nameH = o.name ? 34 : 0;
+  const colLabH = o.colLabels ? (o.colLabH || 64) : 0;
+  const padT = nameH + colLabH;
+  const colBlockLabels = (o.blocks||[]).some(b => b.axis==='col' && b.label);
+  const padB = o.colDim ? (colBlockLabels ? 52 : 30) : (colBlockLabels ? 30 : 0);
+  const ox = padL + 14, oy = padT;
+  const fs = o.fs || Math.min(14, cw*0.46);
+  let s = '';
+  // cells
+  for (let i=0;i<r;i++) for (let j=0;j<c;j++){
+    const x = ox + j*cw, y = oy + i*ch;
+    const masked = o.mask && j > i;
+    let fill = 'none', stroke = o.stroke === undefined ? C.grid : o.stroke;
+    if (o.tint) fill = o.tint;
+    if (o.vals && !masked){ fill = o.color(o.vals[i][j]); }
+    if (masked) { fill = 'none'; stroke = 'none'; }
+    if (o.blockFill){ const b = o.blockFill(i,j); if (b) fill = b; }
+    const title = (o.vals && !masked && o.rowLabels && o.colLabels) ? `<title>${esc(o.rowLabels[i])} → ${esc(o.colLabels[j])}: ${o.vals[i][j]}</title>` : '';
+    s += `<rect x="${x}" y="${y}" width="${cw}" height="${ch}" fill="${fill}" stroke="${stroke}" stroke-width="1">${title}</rect>`;
+    if (o.dots && !masked) s += `<circle cx="${x+cw/2}" cy="${y+ch/2}" r="${Math.max(1.6, cw*0.075)}" fill="${o.dotFill || C.ink3}"/>`;
+    if (o.vals && o.text && !masked){
+      const v = o.vals[i][j]; const txt = o.fmt ? o.fmt(v) : v;
+      if (txt !== '') s += `<text x="${x+cw/2}" y="${y+ch/2+fs*0.36}" font-size="${fs}" text-anchor="middle" fill="${o.textColor ? o.textColor(v) : C.ink}" class="mono">${txt}</text>`;
+    }
+  }
+  // blocks (coloured column or row bands with labels)
+  (o.blocks || []).forEach(b => {
+    if (b.axis === 'col'){ const x = ox + b.from*cw, w = (b.to-b.from+1)*cw;
+      s += `<rect x="${x}" y="${oy}" width="${w}" height="${H}" fill="${b.fill}" fill-opacity="${b.op ?? .2}" stroke="${b.fill}" stroke-opacity=".8" stroke-width="1.5" class="${b.cls||''}"/>`;
+      if (b.label) s += `<text x="${x+w/2}" y="${oy+H+22}" font-size="15" text-anchor="middle" fill="${b.fill}" font-weight="600" class="${b.cls||''}">${b.label}</text>`;
+    } else { const y = oy + b.from*ch, h = (b.to-b.from+1)*ch;
+      s += `<rect x="${ox}" y="${y}" width="${W}" height="${h}" fill="${b.fill}" fill-opacity="${b.op ?? .2}" stroke="${b.fill}" stroke-opacity=".8" stroke-width="1.5" class="${b.cls||''}"/>`;
+      if (b.label) s += `<text x="${ox+W+16}" y="${y+h/2+5}" font-size="15" fill="${b.fill}" font-weight="600" class="${b.cls||''}">${b.label}</text>`;
+    }
+  });
+  // brackets
+  const bs = `fill="none" stroke="${C.ink2}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"`;
+  s += `<path d="M${ox-5},${oy-5} h-8 v${H+10} h8" ${bs}/><path d="M${ox+W+5},${oy-5} h8 v${H+10} h-8" ${bs}/>`;
+  // labels
+  if (o.name) s += `<text x="${ox+W/2}" y="${nameH-10}" font-size="20" text-anchor="middle" fill="${o.nameFill||C.ink}" font-weight="600">${o.name}</text>`;
+  if (o.rowDim) s += `<text transform="translate(${ox-20-labelW},${oy+H/2}) rotate(-90)" font-size="18" text-anchor="middle" fill="${C.ink2}" font-style="italic" font-family="var(--serif)">${o.rowDim}</text>`;
+  if (o.colDim) s += `<text x="${ox+W/2}" y="${oy+H+(colBlockLabels?46:24)}" font-size="18" text-anchor="middle" fill="${C.ink2}" font-style="italic" font-family="var(--serif)">${o.colDim}</text>`;
+  if (o.rowLabels) o.rowLabels.forEach((t,i) => { s += `<text x="${ox-20}" y="${oy+i*ch+ch/2+5}" font-size="${o.labelFs||15}" text-anchor="end" fill="${o.labelFill ? o.labelFill(i) : C.ink2}">${esc(t)}</text>`; });
+  if (o.colLabels) o.colLabels.forEach((t,j) => { const x = ox+j*cw+cw/2, y = oy-8; s += `<text transform="translate(${x},${y}) rotate(-55)" font-size="${o.labelFs||15}" text-anchor="start" fill="${o.labelFill ? o.labelFill(j) : C.ink2}">${esc(t)}</text>`; });
+  // highlights (JS-controlled via .hl.on, or always-on if o.hlOn)
+  (o.hl || []).forEach(h => {
+    const col = h.color || C.q; let x,y,w,hh;
+    if (h.type==='row'){ x=ox; y=oy+h.i*ch; w=W; hh=ch; }
+    else if (h.type==='col'){ x=ox+h.j*cw; y=oy; w=cw; hh=H; }
+    else if (h.type==='cell'){ x=ox+h.j*cw; y=oy+h.i*ch; w=cw; hh=ch; }
+    else if (h.type==='all'){ x=ox; y=oy; w=W; hh=H; }
+    else if (h.type==='tri'){ // upper triangle outline
+      let d = `M${ox+cw},${oy}`; for (let i=1;i<r;i++){ d += ` L${ox+i*cw},${oy+i*ch} L${ox+(i+1)*cw},${oy+i*ch}`; }
+      d += ` L${ox+W},${oy+(r-1)*ch} L${ox+W},${oy} Z`;
+      s += `<path d="${d}" fill="${col}" fill-opacity=".18" stroke="${col}" stroke-width="3" class="hl ${h.cls||''}"/>`; return;
+    }
+    s += `<rect x="${x-1}" y="${y-1}" width="${w+2}" height="${hh+2}" fill="${col}" fill-opacity=".16" stroke="${col}" stroke-width="3" rx="3" class="hl ${h.cls||''}"/>`;
+    if (h.label && h.type === 'col') s += `<text x="${x+w/2}" y="${y-10}" font-size="15" text-anchor="middle" fill="${col}" class="hl ${h.cls||''}" font-weight="600">${h.label}</text>`;
+    else if (h.label) s += `<text x="${x+w+26}" y="${y+hh/2+5}" font-size="15" fill="${col}" class="hl ${h.cls||''}" font-weight="600">${h.label}</text>`;
+  });
+  return {svg:s, w: ox + W + 14 + (o.extraRight||0), h: oy + H + padB + 6};
+}
+// lay items out on one horizontal line, vertically centred; returns an <svg>.
+function line(items, opts={}){
+  const gap = opts.gap ?? 22; let w = 0, h = 0;
+  items.forEach(it => { if (it.op) { it.w = it.w || 44; it.h = 40; } else if (it.gap !== undefined) { it.w = it.gap; it.h = 0; } w += it.w + gap; h = Math.max(h, it.h); });
+  w -= gap; let x = 0, s = '';
+  items.forEach(it => {
+    const y = (h - it.h)/2;
+    if (it.op) s += `<text x="${x+it.w/2}" y="${y+28}" font-size="${it.size||30}" text-anchor="middle" fill="${it.fill||C.ink2}" font-family="var(--serif)">${it.op}</text>`;
+    else if (it.svg) s += `<g transform="translate(${x},${y})">${it.svg}</g>`;
+    x += it.w + gap;
+  });
+  const maxW = opts.maxW || 1128, maxH = opts.maxH || 460;
+  const sc = Math.min(1, maxW / w, maxH / h);
+  return `<svg viewBox="-4 -4 ${w+8} ${h+8}" width="${(w+8)*sc}" height="${(h+8)*sc}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+}
+const put = (id, svg) => { document.getElementById(id).innerHTML = svg; };
+const f2 = v => (Math.round(v*100)/100).toFixed(2);
+const f3 = v => v.toFixed(3).replace(/^0\./,'.').replace(/^-0\./,'-.');
+
+/* =========================================================================
+   DIAGRAMS. Each slide's picture is built here and dropped into a placeholder div by id.
+   Look at the Part 1 deck of the LLM internals series for many more worked examples.
+   ========================================================================= */
+{
+  const A = matrix({r:4, c:3, cw:34, name:'A', rowDim:'m', colDim:'n', dots:true,
+                    hl:[{type:'row', i:1, cls:'hl-row'}]});
+  const B = matrix({r:3, c:2, cw:34, name:'B', nameFill:C.k, rowDim:'n', colDim:'p', dots:true, dotFill:C.k,
+                    tint:'rgba(124,196,255,.08)', hl:[{type:'col', j:0, color:C.k, cls:'hl-col'}]});
+  const P = matrix({r:4, c:2, cw:34, name:'A · B', rowDim:'m', colDim:'p', dots:true,
+                    hl:[{type:'cell', i:1, j:0, cls:'hl-col'}]});
+  put('dg-demo', line([A, {op:'·'}, B, {op:'='}, P], {maxH:380}));
+}
+
+/* =========================================================================
+   ENGINE: a small slide runtime: fragments, hash URLs, keys, touch, print.
+   ========================================================================= */
+(function(){
+  const deck = document.getElementById('deck');
+  const slides = [...deck.querySelectorAll(':scope > section')];
+  const N = slides.length;
+  document.querySelectorAll('.ref[data-ref]').forEach(el => { const i = slides.findIndex(s => s.id === el.dataset.ref); if (i >= 0) el.textContent = i + 1; });
+  let cur = -1, fi = -1;   // current slide, index of last revealed fragment
+  const frags = s => { const list = [...slides[s].querySelectorAll('.frag')];
+    return list.map((el,i) => ({el, key: el.dataset.order !== undefined ? +el.dataset.order : i+0.5})).sort((a,b)=>a.key-b.key).map(x=>x.el); };
+  const setFrag = (el, on) => { el.classList.toggle('on', on);
+    if (el.dataset.target) slides[cur].querySelectorAll(el.dataset.target).forEach(t => t.classList.toggle('on', on)); };
+  function show(s, f, pushHash=true){
+    s = Math.max(0, Math.min(N-1, s));
+    if (s !== cur){ slides.forEach((el,i)=>el.classList.toggle('active', i===s)); cur = s; }
+    const fs = frags(cur); f = Math.max(-1, Math.min(fs.length-1, f)); fi = f;
+    fs.forEach((el,i) => setFrag(el, i <= f));
+    document.getElementById('bar').style.width = ((cur+1)/N*100) + '%';
+    document.getElementById('counter').textContent = `${cur+1} / ${N}`;
+    if (pushHash){ const h = `#/${cur+1}${f>=0?'/'+(f+1):''}`; if (location.hash !== h) history.replaceState(null,'',h); }
+  }
+  function next(){ const fs = frags(cur); if (fi < fs.length-1) show(cur, fi+1); else if (cur < N-1) show(cur+1, -1); }
+  function prev(){ if (fi >= 0) show(cur, fi-1); else if (cur > 0) show(cur-1, frags(cur-1).length-1); }
+  function fromHash(){ const m = location.hash.match(/^#\/(\d+)(?:\/(\d+))?/); if (m) show(+m[1]-1, m[2]?+m[2]-1:-1, false); else show(0,-1); }
+  function fit(){ const s = Math.min(innerWidth/1280, innerHeight/720); deck.style.transform = `translate(-50%,-50%) scale(${s})`; }
+  const help = document.getElementById('help');
+  addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch (e.key){
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': case 'Enter': case 'n': case 'j': next(); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': case 'Backspace': case 'p': case 'k': if (e.key==='p'){ window.print(); break; } prev(); break;
+      case 'Home': show(0,-1); break;
+      case 'End': show(N-1, frags(N-1).length-1); break;
+      case 'f': case 'F': document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); break;
+      case 'P': window.print(); break;
+      case '?': help.classList.toggle('open'); break;
+      case 'Escape': help.classList.remove('open'); break;
+      default: return;
+    }
+    e.preventDefault();
+  });
+  help.addEventListener('click', () => help.classList.remove('open'));
+  deck.addEventListener('click', e => { if (e.target.closest('a, button, input')) return; (e.clientX / innerWidth < 0.33) ? prev() : next(); });
+  let tx = null; addEventListener('touchstart', e => tx = e.touches[0].clientX, {passive:true});
+  addEventListener('touchend', e => { if (tx === null) return; const dx = e.changedTouches[0].clientX - tx; tx = null; if (Math.abs(dx) > 40) (dx < 0 ? next() : prev()); });
+  addEventListener('resize', fit); addEventListener('hashchange', fromHash);
+  fit(); fromHash();
+  window.deck = {next, prev, show, count: N};
+})();
+</script>
+</body>
+</html>

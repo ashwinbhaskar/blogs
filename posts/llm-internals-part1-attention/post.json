@@ -1,0 +1,8 @@
+{
+  "title": "Inside an autoregressive LLM, Part 1: The attention block",
+  "date": "2026-09-10",
+  "summary": "What a language model is, where attention sits inside a transformer, and how the attention block works one matrix at a time, with real GPT-2 numbers throughout. 37 slides.",
+  "kind": "deck",
+  "tags": ["llm", "transformers", "attention"],
+  "series": {"name": "LLM internals", "part": 1}
+}
