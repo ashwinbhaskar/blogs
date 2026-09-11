@@ -134,6 +134,12 @@ section.divider p{font-size:26px;color:var(--ink3)}
 .route .step.live{border-color:var(--q);background:rgba(126,232,200,.06)}
 .route .step.soon-step{border-style:dashed}
 .route .step.soon-step .n,.route .step.soon-step h2{color:var(--ink3)}
+.trio{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+.trio .row{display:flex;gap:26px;align-items:center;background:var(--bg2);border:1px solid var(--grid);border-radius:14px;padding:10px 20px 10px 14px}
+.trio .anim{flex:0 0 440px}
+.trio .anim svg{display:block}
+.trio .txt h2{font-size:22px;margin:0 0 4px}
+.trio .txt p{font-size:20px;margin:0}
 .cap{display:flex;justify-content:space-between;align-items:center;gap:24px;font-size:20px;color:var(--ink);margin:4px 0 0;min-height:34px}
 .cap #watch-cap{flex:1}
 .cap .r{font-family:var(--mono);font-size:15px;color:var(--q);margin-right:10px;letter-spacing:.08em;text-transform:uppercase}
@@ -213,15 +219,16 @@ td b{color:var(--ink)}
 </section>
 
 <!-- 1a · the three words in the title -->
-<section>
+<section id="s-title">
   <p class="kicker">Before we start</p>
   <h1>The title, taken apart</h1>
-  <p class="sub">“LLM” is short for <em>large language model</em>, so the title holds three ideas: a language model, which is large, and which is autoregressive. We take them in the order a reader needs them.</p>
-  <div class="stack">
-    <div class="card frag"><h2>Language model (the LM)</h2><p>A program that takes some text and answers one question: what comes next? Not with a single guess, but with a probability for every possible continuation. The units it works in are <strong>tokens</strong>: a word, or a piece of one (slide <span class="ref" data-ref="s-tokens"></span> shows how text is cut into them). The next slide shows a real answer from a real model.</p></div>
-    <div class="card frag"><h2>Autoregressive</h2><p>How such a program writes: one token at a time. Ask it for the next token, take a likely one, stick it on the end of the text, ask again. Every new token is therefore predicted from all the text so far, the program's own earlier picks included. <em>Auto</em>: its own; <em>regressive</em>: predicting from what came before.</p></div>
-    <div class="card frag"><h2>Large (the first L)</h2><p>A count of the adjustable numbers inside the program. What those numbers are, and where they come from, comes a few slides on, once we have seen the program run.</p></div>
+  <p class="sub">“LLM” is short for <em>large language model</em>. Three ideas, in the order a reader needs them.</p>
+  <div class="trio">
+    <div class="row frag"><div class="anim" id="an-lm"></div><div class="txt"><h2>Language model</h2><p>A program that guesses the next <strong>token</strong> (a word, or a piece of one). Give it text; it returns a probability for every possible next token.</p></div></div>
+    <div class="row frag"><div class="anim" id="an-ar"></div><div class="txt"><h2>Autoregressive</h2><p>How it writes: pick a likely token, add it to the text, repeat. Its own earlier picks become part of the input. <em>Auto</em>: its own; <em>regressive</em>: from what came before.</p></div></div>
+    <div class="row frag"><div class="anim" id="an-big"></div><div class="txt"><h2>Large</h2><p>The count of adjustable numbers inside the program. What they are, and where they come from: a few slides on.</p></div></div>
   </div>
+  <p class="note">All numbers on this slide are real: the probabilities and the continuation of “The cat” are GPT-2 small's own (a real model, always taking its most likely token); the counts are the models' actual sizes.</p>
 </section>
 
 <!-- 1w · watch it write (animated) -->
@@ -470,6 +477,77 @@ const f3 = v => v.toFixed(3).replace(/^0\./,'.').replace(/^-0\./,'-.');
 /* =========================================================================
    DIAGRAMS. Each slide's picture is built here and dropped into a placeholder div by id.
    ========================================================================= */
+
+
+// 1a · the title, taken apart: three small loops. Each is rendered from the elapsed time, so pausing and restarting are free.
+{
+  const sec = document.getElementById('s-title');
+  const els = {lm: document.getElementById('an-lm'), ar: document.getElementById('an-ar'), big: document.getElementById('an-big')};
+  const W = 440, H = 120, cw = tk => tk.length * 7.6 + 14, clamp = v => Math.max(0, Math.min(1, v)), easeOut = f => 1 - Math.pow(1 - f, 3);
+  const chip = (x, y, tk, own, dashed) => `<rect x="${x}" y="${y}" width="${cw(tk)}" height="26" rx="6" fill="${own ? 'rgba(126,232,200,.12)' : C.bg}" stroke="${dashed ? C.v : own ? C.q : C.grid2}"${dashed ? ' stroke-dasharray="4 3"' : ''}/><text x="${x+cw(tk)/2}" y="${y+18}" font-size="13" text-anchor="middle" fill="${dashed ? C.v : own ? C.q : C.ink}" font-weight="${own || dashed ? 600 : 500}">${esc(tk)}</text>`;
+  const svg = s => `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+  const defs = `<defs><marker id="arT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${C.ink2}"/></marker><marker id="arTq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${C.q}"/></marker></defs>`;
+
+  // language model: type a prompt, ask for the next token, bars grow (GPT-2 small's real top 3)
+  const LM = [{p:'Once upon a', c:[['time',17.7],['certain',8.5],['moment',3.1]]},
+              {p:'To be or not to', c:[['be',95.8],['have',0.4],['become',0.4]]},
+              {p:'The cat sat on the', c:[['floor',7.6],['bed',6.5],['couch',5.4]]}];
+  function lm(t){ const P = 4800, idx = Math.floor(t / P) % LM.length, u = t % P, d = LM[idx], toks = d.p.split(' ');
+    let s = `<text x="0" y="11" font-size="11" fill="${C.ink3}">text in</text>`, x = 0;
+    toks.forEach((tk, k) => { if (u > 150 + k*170) s += chip(x, 18, tk, false, false); x += cw(tk) + 5; });
+    const tq = 150 + toks.length*170 + 80; if (u > tq) s += chip(x, 18, '?', false, true);
+    const tb = tq + 350, f = easeOut(clamp((u - tb) / 600)), bx = 0, by = 62;
+    s += defs + `<path d="M44,46 V${by-3}" fill="none" stroke="${C.ink2}" stroke-width="1.5" marker-end="url(#arT)"/>`;
+    s += `<rect x="${bx}" y="${by}" width="88" height="36" rx="9" fill="${C.bg}" stroke="${u > tq ? C.q : C.grid2}"/><text x="${bx+44}" y="${by+23}" font-size="13" text-anchor="middle" fill="${C.ink}" font-weight="600">the model</text>`;
+    s += `<path d="M${bx+90},${by+18} H${bx+112}" fill="none" stroke="${u > tb ? C.ink2 : C.grid2}" stroke-width="1.5" marker-end="url(#arT)"/>`;
+    if (u > tb){ s += `<text x="122" y="${by-6}" font-size="11" fill="${C.ink3}">probability of the next token, top 3 shown</text>`;
+      d.c.forEach(([tk, pc], i) => { const y = by + 2 + i*15, w = Math.max(3, pc/100 * 210 * f);
+        s += `<text x="176" y="${y+10}" font-size="12" text-anchor="end" fill="${i ? C.ink2 : C.ink}" font-weight="${i ? 500 : 600}">${esc(tk)}</text><rect x="184" y="${y+1}" width="${w}" height="10" rx="2" fill="${C.q}" fill-opacity="${i ? .5 : .95}"/>`;
+        if (f > .98) s += `<text x="${192 + w}" y="${y+10}" font-size="11" fill="${C.ink2}" class="mono">${pc}%</text>`; }); }
+    const fade = u > P - 400 ? (P - u) / 400 : 1;
+    els.lm.innerHTML = svg(`<g opacity="${fade}">${s}</g>`); }
+
+  // autoregressive: the model's own picks flow back into its input (GPT-2 small's greedy continuation of "The cat")
+  const AR = {p:['The','cat'], picks:['was','found','in','a','field','in']};
+  function ar(t){ const P = 900 + AR.picks.length*900 + 1600, u = t % P;
+    const n = Math.min(AR.picks.length, Math.max(0, Math.floor((u - 900) / 900) + 1));   // picks landed so far
+    const toks = AR.p.map(x => ({t:x, own:false})).concat(AR.picks.slice(0, n).map(x => ({t:x, own:true})));
+    let s = defs + `<text x="0" y="11" font-size="11" fill="${C.ink3}">text so far</text>`, x = 0;
+    toks.forEach(tk => { s += chip(x, 18, tk.t, tk.own, false); x += cw(tk.t) + 5; });
+    const endX = x, bx = 14, by = 66;
+    s += `<rect x="${bx}" y="${by}" width="88" height="36" rx="9" fill="${C.bg}" stroke="${C.grid2}"/><text x="${bx+44}" y="${by+23}" font-size="13" text-anchor="middle" fill="${C.ink}" font-weight="600">the model</text>`;
+    s += `<path d="M${Math.min(endX/2, 200)},46 V56 H${bx+44} V${by-2}" fill="none" stroke="${C.ink2}" stroke-width="1.5" marker-end="url(#arT)"/>`;
+    const flying = n < AR.picks.length && u >= 900 + n*900 - 380 && u < 900 + n*900;
+    s += `<path d="M${bx+90},${by+18} H${endX+8} V48" fill="none" stroke="${flying ? C.q : C.grid2}" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#${flying ? 'arTq' : 'arT'})"/>`;
+    s += `<text x="${bx+100}" y="${by+34}" font-size="11" fill="${flying ? C.q : C.ink3}">its pick goes back in</text>`;
+    if (flying){ const tk = AR.picks[n], f = easeOut(clamp((u - (900 + n*900 - 380)) / 380)); const x0 = bx + 90, y0 = by + 5, x1 = endX, y1 = 18;
+      s += chip(x0 + (x1-x0)*f, y0 + (y1-y0)*f, tk, true, false); }
+    const fade = u > P - 400 ? (P - u) / 400 : 1;
+    els.ar.innerHTML = svg(`<g opacity="${fade}">${s}</g>`); }
+
+  // large: a field of dials turning, and the count of them rolling up
+  const BIG = [[124000000, 'GPT-2 small'], [7000000000, 'LLaMA-2 7B'], [175000000000, 'GPT-3']];
+  const fmt = n => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  function big(t){ const P = 9600, u = t % P, stage = Math.min(2, Math.floor(u / 3200)), v = (u - stage*3200) / 3200;
+    const from = stage ? BIG[stage-1][0] : 0, to = BIG[stage][0], f = easeOut(clamp(v / 0.7));
+    const n = from + (to - from) * f;
+    let s = `<text x="0" y="11" font-size="11" fill="${C.ink3}">adjustable numbers (a few of them)</text>`;
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 12; c++){ const i = r*12 + c, cx = 10 + c*18.5, cy = 29 + r*19;
+      const moving = 1 - easeOut(clamp((v - 0.45) / 0.35));   // adjusted while the count climbs, then they hold
+      const a = i*1.7 + stage*2.1 + moving * (Math.sin(t/500 + i)*1.4 + t/900);
+      s += `<circle cx="${cx}" cy="${cy}" r="7.5" fill="${C.bg}" stroke="${C.grid2}"/><path d="M${cx},${cy} L${cx + 6.5*Math.cos(a)},${cy + 6.5*Math.sin(a)}" stroke="${C.q}" stroke-width="1.8" stroke-linecap="round"/>`; }
+    s += `<text x="${W}" y="52" font-size="26" text-anchor="end" fill="${C.ink}" class="mono" font-weight="600">${fmt(n)}</text>`;
+    s += `<text x="${W}" y="74" font-size="13" text-anchor="end" fill="${f > .98 ? C.q : C.ink3}" font-weight="600">${BIG[stage][1]}</text>`;
+    s += `<text x="${W}" y="94" font-size="11" text-anchor="end" fill="${C.ink3}">nobody sets these by hand</text>`;
+    els.big.innerHTML = svg(s); }
+
+  let raf = null, t0 = 0, odd = false;
+  function tick(){ odd = !odd; if (odd){ const t = performance.now() - t0; lm(t); ar(t); big(t); } raf = requestAnimationFrame(tick); }
+  function start(){ stop(); t0 = performance.now(); raf = requestAnimationFrame(tick); }
+  function stop(){ if (raf) cancelAnimationFrame(raf); raf = null; }
+  new MutationObserver(() => { if (sec.classList.contains('active')) start(); else stop(); }).observe(sec, {attributes: true, attributeFilter: ['class']});
+  lm(3200); ar(6300); big(2600);   // static frames for print
+}
 
 // 1w · watch it write: the next-token loop, animated. GEN is a greedy run of GPT-2 small (top 5 per round).
 const GEN = {"prompt": ["The", "cat", "chased", "the", "mouse", "because", "it", "was"], "rounds": [{"cands": [["too", 0.0806], ["so", 0.0543], ["trying", 0.0454], ["chasing", 0.0352], ["a", 0.0275]], "pick": "too"}, {"cands": [["big", 0.1395], ["close", 0.0869], ["far", 0.0507], ["scared", 0.0467], ["fast", 0.0444]], "pick": "big"}, {"cands": [["and", 0.1985], ["for", 0.1873], [".", 0.1838], ["to", 0.1592], [",", 0.1521]], "pick": "and"}, {"cands": [["the", 0.0723], ["too", 0.066], ["it", 0.0487], ["had", 0.0476], ["he", 0.0357]], "pick": "the"}, {"cands": [["mouse", 0.5206], ["cat", 0.092], ["mice", 0.0391], ["dog", 0.0125], ["other", 0.0083]], "pick": "mouse"}, {"cands": [["was", 0.3268], ["had", 0.0903], ["didn", 0.0437], ["would", 0.0312], ["'s", 0.0306]], "pick": "was"}, {"cands": [["too", 0.6708], ["bigger", 0.0151], ["so", 0.015], ["not", 0.0089], ["a", 0.0081]], "pick": "too"}, {"cands": [["small", 0.448], ["big", 0.1514], ["large", 0.0362], ["short", 0.0265], ["slow", 0.0235]], "pick": "small"}]};
