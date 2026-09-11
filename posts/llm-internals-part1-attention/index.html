@@ -105,6 +105,13 @@ svg .frag{transform:none;transition:opacity .4s ease}
 .h-swap h1.b{position:absolute;left:0;top:0;opacity:0;color:var(--q)}
 .h-swap.on h1.a{opacity:0}
 .h-swap.on h1.b{opacity:1}
+.cap{display:flex;justify-content:space-between;align-items:center;gap:24px;font-size:21px;color:var(--ink);margin:6px 0 0;min-height:34px}
+.cap>span:first-child{flex:1}
+.cap .r{font-family:var(--mono);font-size:15px;color:var(--q);margin-right:10px;letter-spacing:.08em;text-transform:uppercase}
+.ctl{display:flex;gap:8px;flex:none}
+.ctl button{font:inherit;font-size:15px;font-family:var(--mono);color:var(--ink2);background:var(--bg2);border:1px solid var(--grid2);border-bottom-width:2px;border-radius:8px;padding:5px 12px;cursor:pointer}
+.ctl button:hover{color:var(--ink);border-color:var(--ink3)}
+.hl.now{opacity:1;transition:none}
 .pipe .g{opacity:0;transition:opacity .4s ease}
 .pipe .g.on{opacity:1}
 
@@ -232,7 +239,7 @@ td b{color:var(--ink)}
 <section>
   <p class="kicker">The route</p>
   <h1>Five stops inside the attention block</h1>
-  <p class="sub">The names below are previews; each stop introduces its own.</p>
+  <p class="sub">The names below are previews; each stop defines them properly.</p>
   <div class="route">
     <div class="step"><div class="n">1</div><h2>Setup</h2><p>The input <span class="m">X</span>, and three matrices made from it: <span class="m">Q</span>, <span class="m">K</span>, <span class="m">V</span></p></div>
     <div class="step"><div class="n">2</div><h2>Scores</h2><p>Every token against every token: <span class="m">S</span> = <span class="m">Q·K<sup>T</sup></span></p></div>
@@ -267,7 +274,7 @@ td b{color:var(--ink)}
         <tr><td><span class="m">d<sub>k</sub></span> = <span class="m">d</span><sub>model</sub> / <span class="m">h</span></td><td>width per head</td><td class="num">64</td><td class="num">128</td></tr>
       </table>
       <p class="frag" style="font-size:20px;margin-top:12px"><strong>Heads:</strong> the attention block runs <span class="m">h</span> copies of everything that follows, side by side, each in a narrower width <span class="m">d<sub>k</sub></span>. We build one head first (Stops 1 to 4) and combine them at Stop 5.</p>
-      <div class="callout frag"><p><strong>Order-blind.</strong> Nothing we build from here knows that <em>cat</em> comes before <em>chased</em>. Position is injected either here (GPT-2 adds a position vector to each row of <span class="m">X</span>) or later, inside attention (LLaMA rotates the <span class="m">Q</span> and <span class="m">K</span> we build next: RoPE). That one sentence is all we say about it today.</p></div>
+      <div class="callout frag"><p><strong>Order-blind.</strong> Apart from the mask at Stop 3, nothing we build from here knows that <em>cat</em> comes before <em>chased</em>. Position is injected either here (GPT-2 adds a position vector to each row of <span class="m">X</span>) or later, inside attention (LLaMA rotates the <span class="m">Q</span> and <span class="m">K</span> we build next: RoPE). That one sentence is all we say about it today.</p></div>
     </div>
   </div>
 </section>
@@ -293,21 +300,18 @@ td b{color:var(--ink)}
   <div class="dg" id="dg-q"></div>
   <div class="cols" style="margin-top:14px">
     <div class="col"><p class="frag">Each head owns its own <span class="m">W<sub>q</sub></span>, <span class="m">W<sub>k</sub></span>, <span class="m">W<sub>v</sub></span>, each of shape <span class="shape">[d_model × d_k]</span>. The same recipe gives <span class="c-k">K</span> and <span class="c-v">V</span>.</p></div>
-    <div class="col"><p class="frag">Row <span class="m">i</span> of <span class="m">Q</span> is token <span class="m">i</span>'s question, compressed from <span class="m">d</span><sub>model</sub> down to <span class="m">d<sub>k</sub></span> numbers. In GPT-2 small: 768 → 64, twelve times over.</p></div>
+    <div class="col"><p class="frag">Row <span class="m">i</span> of <span class="m">Q</span> is token <span class="m">i</span>'s question, compressed from <span class="m">d</span><sub>model</sub> down to <span class="m">d<sub>k</sub></span> numbers. In GPT-2 small: 768 → 64, once in each of the 12 heads.</p></div>
   </div>
 </section>
 
 <!-- 6 · the packing trick -->
-<section>
+<section id="s-pack">
   <p class="kicker">Stop 1: Setup</p>
   <h1>The packing trick: all heads in one multiplication</h1>
-  <p class="sub">Drawn with 3 heads for space; GPT-2 small has 12.</p>
+  <p class="sub">Put the three lenses side by side and multiply once. Drawn with 3 heads for space; GPT-2 small has 12.</p>
   <div class="dg" id="dg-fuse"></div>
-  <div class="cols" style="margin-top:12px">
-    <div class="col"><p class="frag" data-target="#dg-fuse .hl-col">Column <span class="m">j</span> of the result is <span class="m">X</span> · (column <span class="m">j</span> of <span class="m">W</span>). It never touches any other column, so each head's result lands in its own columns: <strong>no cross-contamination</strong>.</p></div>
-    <div class="col"><p class="frag">So <span class="m">h</span> small multiplications become one <span class="shape">[L × d_model]·[d_model × d_model]</span>. Same maths, one call. The heads' work is independent, so it can be <strong>packed</strong> into the one big matrix multiplication GPUs are built for.</p></div>
-  </div>
-  <p class="note frag">GPT-2 goes one step further and packs <span class="m">Q</span>, <span class="m">K</span> and <span class="m">V</span> together: a single 768 × 2304 matrix (called <span class="mono">c_attn</span> in the released parameters), then splits the result three ways.</p>
+  <div class="cap" id="fuse-cap-row"><span id="fuse-cap"></span><span class="ctl"><button type="button" id="fuse-replay">Replay</button></span></div>
+  <p class="note">GPT-2 packs <span class="m">Q</span>, <span class="m">K</span> and <span class="m">V</span> too: one 768 × 2304 matrix (<span class="mono">c_attn</span> in the released parameters), split three ways afterwards.</p>
 </section>
 
 <!-- 7 · divider -->
@@ -319,16 +323,12 @@ td b{color:var(--ink)}
 </section>
 
 <!-- 8 · why transpose -->
-<section>
+<section id="s-transpose">
   <p class="kicker">Stop 2: Scores</p>
   <h1>The scores are <span class="m">S</span> = <span class="m">Q·K<sup>T</sup></span>. Why the transpose?</h1>
-  <p>We want an <span class="m">L</span> × <span class="m">L</span> table, call it <span class="m">S</span>, where cell (<span class="m">i</span>, <span class="m">j</span>) = <span class="m">q<sub>i</sub></span> · <span class="m">k<sub>j</sub></span>: <strong>every query dotted with every key</strong>.</p>
-  <div class="cols center">
-    <div class="col narrow"><div class="dg" id="dg-kT"></div></div>
-    <div class="col wide"><div class="dg" id="dg-qkT"></div></div>
-  </div>
-  <p class="frag" data-target="#dg-qkT .hl-row">A matrix product computes <em>row of the left</em> · <em>column of the right</em>. Queries already sit in rows.</p>
-  <p class="frag" data-target="#dg-qkT .hl-col">So keys must be arranged as columns. That is the entire reason for the transpose: it puts each <span class="m">k<sub>j</sub></span> where the multiplication will find it. <span class="frag" data-target="#dg-qkT .hl-cell">Row <span class="m">i</span> meets column <span class="m">j</span> at cell (<span class="m">i</span>, <span class="m">j</span>).</span></p>
+  <p class="sub">We want an <span class="m">L</span> × <span class="m">L</span> table <span class="m">S</span> with cell (<span class="m">i</span>, <span class="m">j</span>) = <span class="m">q<sub>i</sub></span> · <span class="m">k<sub>j</sub></span>: <strong>every query against every key</strong>.</p>
+  <div class="dg" id="dg-qkT"></div>
+  <div class="cap"><span id="qkT-cap"></span><span class="ctl"><button type="button" id="qkT-replay">Replay</button></span></div>
 </section>
 
 <!-- 9 · the scores -->
@@ -352,15 +352,12 @@ td b{color:var(--ink)}
 </section>
 
 <!-- 10 · packing breaks -->
-<section>
+<section id="s-fail">
   <p class="kicker">Stop 2: Scores</p>
   <h1>The packing trick breaks here</h1>
-  <p>Could we score in one shot with the packed <span class="m">[Q<sup>1</sup>|Q<sup>2</sup>|Q<sup>3</sup>]</span> and <span class="m">[K<sup>1</sup>|K<sup>2</sup>|K<sup>3</sup>]</span>?</p>
+  <p class="sub">Could we score in one shot, packed <span class="m">[Q<sup>1</sup>|Q<sup>2</sup>|Q<sup>3</sup>]</span> times packed <span class="m">[K<sup>1</sup>|K<sup>2</sup>|K<sup>3</sup>]<sup>T</sup></span>? Watch one cell.</p>
   <div class="dg" id="dg-fail"></div>
-  <div class="cols" style="margin-top:10px">
-    <div class="col"><p class="frag">A product sums over the shared dimension, and the shared dimension now runs <em>across heads</em>. The heads' tables get <strong class="c-bad">added together</strong>. Exactly what we do not want.</p></div>
-    <div class="col"><p class="frag">So this step stays <strong>separate</strong>: <span class="m">h</span> independent <span class="shape">[L × d_k]·[d_k × L]</span> products, computed together as a batch of shape <span class="shape">h × [L × L]</span>. Independent work that cannot be merged into one.</p></div>
-  </div>
+  <div class="cap"><span id="fail-cap"></span><span class="ctl"><button type="button" id="fail-replay">Replay</button></span></div>
 </section>
 
 <!-- 11 · cost -->
@@ -400,7 +397,7 @@ td b{color:var(--ink)}
   <div class="eq" style="font-size:32px;margin:0 0 14px"><i>A<sub>ij</sub></i><span class="op">=</span><span class="frac"><span><span class="r">e</span><sup><i>S<sub>ij</sub></i></sup></span><span>Σ<sub><i>m</i></sub> <span class="r">e</span><sup><i>S<sub>im</sub></i></sup></span></span></div>
   <div class="cols">
     <div class="col">
-      <p>Softmax turns each row of scores into shares that sum to 1. Call the result <span class="m">A</span>: token <span class="m">i</span> now has a budget of exactly one unit to spend across the tokens it looks at. That is an attention <em>weight</em>.</p>
+      <p>Softmax turns each row of scores into shares that sum to 1. Call the result <span class="m">A</span>: token <span class="m">i</span> now has a budget of exactly one unit to spend across the tokens it looks at. Each share is an attention <em>weight</em>.</p>
       <p class="frag">Why <span class="r">e</span><sup><span class="m">x</span></sup> rather than dividing by the row sum? Scores can be negative. The exponential makes everything positive, keeps the order, and stretches gaps: a score higher by 2 gets e² ≈ 7.4× the share.</p>
     </div>
     <div class="col">
@@ -417,7 +414,7 @@ td b{color:var(--ink)}
   <div class="cols center">
     <div class="col">
       <p><span class="m">q</span> · <span class="m">k</span> is a sum of <span class="m">d<sub>k</sub></span> products. If the entries are of size about 1, the sum's spread (its standard deviation; the <span class="m">d<sub>k</sub></span> variances add up) grows like <strong>√<span class="m">d<sub>k</sub></span></strong>. With <span class="m">d<sub>k</sub></span> = 64, raw scores come out ×8 too wide.</p>
-      <div class="callout frag"><p>Softmax stretches gaps exponentially, so scores spread by ±8 give one token essentially the whole budget and the rest nothing. Nothing can be learned from the ones that got nothing (learned during training, which we skip). Divide by √<span class="m">d<sub>k</sub></span> and the spread is back to ~1: softmax stays <em>soft</em>, and learning can proceed. (Row <em>it</em>: <em>cat</em>'s share drops from .264 to .217 and the others gain.)</p></div>
+      <div class="callout frag"><p>Softmax stretches gaps exponentially, so scores spread by ±8 give one token essentially the whole budget and the rest nothing. Nothing can be learned from the ones that got nothing (learning happens in training, which we skip). Divide by √<span class="m">d<sub>k</sub></span> and the spread is back to ~1: softmax stays <em>soft</em>, and learning can proceed. (Row <em>it</em>: <em>cat</em>'s share drops from .264 to .217 and the others gain.)</p></div>
       <p class="frag">From here on, <span class="m">S</span> means <span class="m">Q·K<sup>T</sup></span> / √<span class="m">d<sub>k</sub></span>.</p>
     </div>
     <div class="col narrow"><div class="dg" id="dg-sm"></div></div>
@@ -434,7 +431,7 @@ td b{color:var(--ink)}
       <div class="dg frag swap" id="dg-reveal-mask" data-order="3" data-target="#dg-reveal-un"></div>
     </div>
     <div class="col">
-      <p class="frag" data-order="1" data-target="#dg-reveal-un .hl-cell">Token 3, <em>chased</em>, has been reading token 8, <em>was</em>. For a model whose entire job is <strong>predict the next token</strong>, that is cheating: the answer is sitting on the table.</p>
+      <p class="frag" data-order="1" data-target="#dg-reveal-un .hl-cell">Token 3, <em>chased</em>, has been reading token 8, <em>was</em>. For a model whose entire job is <strong>to predict the next token</strong>, that is cheating: the answer is sitting on the table.</p>
       <p class="frag" data-order="2" data-target="#dg-reveal-un .hl-tri">Every cell above the diagonal is a peek into the future. Fix: before the softmax, set every cell with <span class="m">j</span> &gt; <span class="m">i</span> to −∞. Since <span class="r">e</span><sup>−∞</sup> = 0, those cells get exactly zero budget.</p>
       <div class="callout frag" data-order="4" data-target=".h-swap"><p>The <strong>causal mask</strong>. The table turns lower-triangular and each row's shares are recomputed over the past only. This one line is what makes the model <em>autoregressive</em>.</p></div>
     </div>
@@ -489,7 +486,7 @@ td b{color:var(--ink)}
   <div class="cols" style="margin-top:14px">
     <div class="col">
       <div class="eq" style="font-size:32px;margin:0 0 10px"><i>z<sub>i</sub></i><span class="op">=</span>Σ<sub><i>j</i></sub> <i>A<sub>ij</sub></i> <i>v<sub>j</sub></i></div>
-      <p class="frag" data-target="#dg-av .hl">Call the result <span class="m">Z</span>. Row <span class="m">i</span> of <span class="m">Z</span> is a blend of value vectors, weighted by row <span class="m">i</span>'s budget. Token <em>it</em>'s new vector is mostly what <em>cat</em> and <em>mouse</em> handed over. The information has moved.</p>
+      <p class="frag" data-target="#dg-av .hl">Call the result <span class="m">Z</span>. Row <span class="m">i</span> of <span class="m">Z</span> is a blend of value vectors, weighted by row <span class="m">i</span>'s shares. The new vector for <em>it</em> is mostly what <em>cat</em> and <em>mouse</em> handed over. The information has moved.</p>
     </div>
     <div class="col"><p class="frag"><span class="m">Z</span> has one row per token, <span class="m">d<sub>k</sub></span> wide. Shapes: <span class="shape">[L × L]·[L × d_k] → [L × d_k]</span>. No transpose this time: <span class="m">V</span>'s rows are already tokens, which is exactly what the columns of <span class="m">A</span> index.</p></div>
   </div>
@@ -518,7 +515,7 @@ td b{color:var(--ink)}
   <p class="kicker">Stop 5: Heads</p>
   <h1>One head, one pattern</h1>
   <div class="dg" id="dg-heads"></div>
-  <p class="frag" style="margin-top:14px">Each head has its own lenses <span class="m">W<sub>q</sub></span>, <span class="m">W<sub>k</sub></span>, <span class="m">W<sub>v</sub></span>, so each learns its own way of relating tokens: “the token before me”, “the nouns so far”, … A sentence needs several of these at once. The odd one out on the right is not broken. Watch.</p>
+  <p class="frag" style="margin-top:14px">Each head has its own lenses <span class="m">W<sub>q</sub></span>, <span class="m">W<sub>k</sub></span>, <span class="m">W<sub>v</sub></span>, and learns its own way of relating tokens: “the token before me”, “the nouns so far”, … A sentence needs several of these at once. The odd one out on the right is not broken. Watch.</p>
   <p class="note">All three are GPT-2 small on our sentence. Layer 4 head 11 puts 0.99+ on the previous token at every position after the first.</p>
 </section>
 
@@ -544,7 +541,7 @@ td b{color:var(--ink)}
   <p class="sub">Drawn with 3 heads for space; GPT-2 small has 12.</p>
   <div class="dg" id="dg-wo"></div>
   <div class="cols" style="margin-top:12px">
-    <div class="col"><p class="frag">Concatenation only lays the heads side by side; nothing has mixed yet. <span class="m">W<sub>o</sub></span>, a fourth learned matrix of shape <span class="shape">[d_model × d_model]</span>, is where the heads talk to each other.</p></div>
+    <div class="col"><p class="frag">Concatenation only lays the heads side by side; nothing has mixed yet. <span class="m">W<sub>o</sub></span>, a fourth learned matrix of shape <span class="shape">[d_model × d_model]</span>, is where the heads' outputs get mixed.</p></div>
     <div class="col"><p class="frag" data-target="#dg-wo .hl-blocks">Split <span class="m">W<sub>o</sub></span> into row-blocks and the product is <span class="m">Z<sup>1</sup>·W<sub>o</sub><sup>1</sup> + Z<sup>2</sup>·W<sub>o</sub><sup>2</sup> + Z<sup>3</sup>·W<sub>o</sub><sup>3</sup></span>, one term per head: each head writes its own additive update. Packing is safe again, because adding the heads together is exactly what we want here.</p></div>
   </div>
 </section>
@@ -556,8 +553,8 @@ td b{color:var(--ink)}
   <div class="dg" id="dg-res"></div>
   <div class="eq" style="font-size:32px;margin:8px 0 14px"><i>X</i><span class="op">←</span><i>X</i><span class="op">+</span><span class="r">Attention</span>(<span class="r">LN</span>(<i>X</i>))</div>
   <div class="cols">
-    <div class="col"><p class="frag" style="font-size:20px">LN is LayerNorm, the same kind of “norm (LN)” box as in the zoomed-out picture: a per-token rescaling. Every block has one on its way in, and there is a final one before the LM head. Strictly, Stop 1 should have read <span class="m">Q</span> = LN(<span class="m">X</span>)·<span class="m">W<sub>q</sub></span>; we left it out until now because it changes nothing in the story. GPT-2 and LLaMA both normalise <em>before</em> each block (LLaMA uses the RMSNorm variant). That is all we say about LN.</p></div>
-    <div class="col"><p class="frag"><span class="m">X</span> is a running scratchpad, the <strong>residual stream</strong>. The attention block reads it, computes an update of shape <span class="shape">[L × d_model]</span>, and <em>adds</em> it back. What a token already knew is never thrown away: a block only adds a correction, and a block with nothing to say adds nothing. Every block after this one, in this layer and the next, reads the same stream.</p></div>
+    <div class="col"><p class="frag" style="font-size:20px">LN is LayerNorm, the same kind of “norm (LN)” box as in the zoomed-out picture: a per-token rescaling. Every block has one on its way in, and there is a final one before the LM head (Part 4). Strictly, Stop 1 should have read <span class="m">Q</span> = LN(<span class="m">X</span>)·<span class="m">W<sub>q</sub></span>; we left it out until now because it changes nothing in the story. GPT-2 and LLaMA both normalise <em>before</em> each block (LLaMA uses the RMSNorm variant). That is all we say about LN.</p></div>
+    <div class="col"><p class="frag"><span class="m">X</span> is a running scratchpad, the <strong>residual stream</strong>. The attention block reads it, computes an update of shape <span class="shape">[L × d_model]</span>, and <em>adds</em> it back. What a token already knew is never thrown away: a block only adds a correction, and a block with nothing to say adds nothing. Every block after this one, in this layer and every later one, reads the same stream.</p></div>
   </div>
 </section>
 
@@ -600,7 +597,7 @@ td b{color:var(--ink)}
     <div class="col">
       <ul>
         <li><b>Why many heads?</b> One head = one pattern; a sentence needs several at once.</li>
-        <li><b>Why pack Q/K/V and W<sub>o</sub> but not the scores?</b> Packing sums over the shared dimension: harmless for Q, K, V, fatal for the scores, wanted for W<sub>o</sub>.</li>
+        <li><b>Why pack Q, K, V and W<sub>o</sub> but not the scores?</b> A product sums over the shared dimension: harmless for Q, K, V, fatal for the scores, wanted for W<sub>o</sub>.</li>
         <li><b>Why W<sub>o</sub>?</b> Concatenation doesn't mix heads; <span class="m">W<sub>o</sub></span> does.</li>
         <li><b>Why add to X?</b> Nothing a token knew is thrown away; each block adds a correction, and can add nothing.</li>
       </ul>
@@ -612,7 +609,7 @@ td b{color:var(--ink)}
 <section class="title">
   <p class="kicker">End of Part 1</p>
   <h1 style="font-size:54px;margin-bottom:12px">Attention moves information <em>between</em> tokens.</h1>
-  <p class="sub">Every token's new vector is a blend of what other tokens handed over. But notice what did <em>not</em> happen: apart from the linear lenses, no token changed its own features. Everything else was mixing.</p>
+  <p class="sub">Every token's new vector is a blend of what the tokens so far handed over. But notice what did <em>not</em> happen: apart from the lenses and <span class="m">W<sub>o</sub></span>, no token changed its own features. Everything else was mixing.</p>
   <p class="sub frag" style="color:var(--q)" data-target="#closing-locator">Transforming a token's own features is the MLP's job. → Part 2.</p>
   <div class="locator hl" id="closing-locator" data-stage="mlp" style="position:static;margin-top:6px"></div>
   <p class="hint" style="bottom:20px"><span class="kbd">Home</span> to restart &nbsp;|&nbsp; <span class="kbd">P</span> for a printable version</p>
@@ -780,27 +777,88 @@ put('dg-x', line([{...matrix({r:L,c:DM,cw:30,name:'X',rowLabels:T,labelFill:hero
   put('dg-q', line([X,{op:'·'},W,{op:'='},Q], {maxH:360}));
 }
 
-// 6 · fuse heads
+// 6 · fuse heads: animated. Phase 1 fills the result cell by cell (row i of X, column j of W);
+//    phase 2 sweeps the columns to show that column j of the result touches only column j of W.
 {
-  const X = matrix({r:L,c:DM,cw:30,name:'X',rowDim:'L',colDim:tx(DMODEL),dots:true});
-  const blocks = ax => [0,1,2].map(hh => ({axis:ax, from:hh*DK, to:hh*DK+DK-1, fill:C.h[hh], label:tx(`W_q^${hh+1}`)}));
-  const W = matrix({r:DM,c:NH*DK,cw:30,name:tx('[ W_q^1 | W_q^2 | W_q^3 ]'),rowDim:tx(DMODEL),colDim:tx(DMODEL),dots:true,blocks:blocks('col'),hl:[{type:'col',j:3,cls:'hl-col',color:C.ink}]});
+  const NC = NH*DK, cap = document.getElementById('fuse-cap'), sec = document.getElementById('s-pack');
+  const head = j => Math.floor(j / DK);
+  const blocks = [0,1,2].map(hh => ({axis:'col', from:hh*DK, to:hh*DK+DK-1, fill:C.h[hh], label:tx(`W_q^${hh+1}`)}));
   const qb = [0,1,2].map(hh => ({axis:'col', from:hh*DK, to:hh*DK+DK-1, fill:C.h[hh], label:tx(`Q^${hh+1}`)}));
-  const Q = matrix({r:L,c:NH*DK,cw:30,name:tx('[ Q^1 | Q^2 | Q^3 ]'),rowDim:'L',colDim:tx(DMODEL),dots:true,blocks:qb,hl:[{type:'col',j:3,cls:'hl-col',color:C.ink}]});
-  put('dg-fuse', line([X,{op:'·'},W,{op:'='},Q], {maxH:250}));
+  function frame(o){   // o: {filled: n cells done (row-major), i, j (current cell) | col (phase 2) | final}
+    const done = (i, j) => o.final || (o.filled !== undefined && i*NC + j < o.filled);
+    const hx = [], hw = [], hq = [];
+    if (o.i !== undefined){ const col = C.h[head(o.j)];
+      hx.push({type:'row', i:o.i, cls:'now', color:C.ink}); hw.push({type:'col', j:o.j, cls:'now', color:col}); hq.push({type:'cell', i:o.i, j:o.j, cls:'now', color:col}); }
+    if (o.col !== undefined){ const col = C.h[head(o.col)];
+      hw.push({type:'col', j:o.col, cls:'now', color:col}); hq.push({type:'col', j:o.col, cls:'now', color:col}); }
+    const X = matrix({r:L,c:DM,cw:30,name:'X',rowDim:'L',colDim:tx(DMODEL),dots:true,hl:hx});
+    const W = matrix({r:DM,c:NC,cw:30,name:tx('[ W_q^1 | W_q^2 | W_q^3 ]'),rowDim:tx(DMODEL),colDim:tx(DMODEL),dots:true,blocks,hl:hw});
+    const Q = matrix({r:L,c:NC,cw:30,name:tx('[ Q^1 | Q^2 | Q^3 ]'),rowDim:'L',colDim:tx(DMODEL),dots:true,blocks:qb,hl:hq,
+                      dotFill:C.ink3, blockFill:(i,j) => done(i,j) ? C.h[head(j)] + '99' : C.bg});
+    put('dg-fuse', line([X,{op:'·'},W,{op:'='},Q], {maxH:330}));
+  }
+  let timer = null;
+  const say = (r, msg) => { cap.innerHTML = (r ? `<span class="r">${r}</span>` : '') + msg; };
+  const later = (fn, ms) => { timer = setTimeout(fn, ms); };
+  function run(){
+    stop(); let k = 0;
+    const cell = () => { const i = Math.floor(k / NC), j = k % NC;
+      frame({filled: k, i, j}); say('one cell', `row ${i+1} of <span class="m">X</span> · column ${j+1} of <span class="m">W</span> → cell (${i+1}, ${j+1}) of the result`);
+      k++; if (k < L*NC) later(cell, k <= NC ? 260 : 55); else later(sweep, 500); };
+    let c = 0;
+    const sweep = () => { frame({filled: L*NC, col: c}); const hh = head(c) + 1;
+      say('one column', `column ${c+1} of the result uses only column ${c+1} of <span class="m">W</span>: it belongs to head ${hh}, and comes only from <span class="m">W<sub>q</sub><sup>${hh}</sup></span>`);
+      c++; if (c < NC) later(sweep, 650); else later(finish, 700); };
+    const finish = () => { frame({final: true}); say('', `Each head's result lands in its own columns: <strong>no cross-contamination</strong>. So <span class="m">h</span> small multiplications become one <span class="shape">[L × d_model]·[d_model × d_model]</span>: same maths, one call.`); };
+    frame({filled: 0}); say('', `Each cell of the result comes from one row of <span class="m">X</span> and one column of <span class="m">W</span>.`); later(cell, 700);
+  }
+  function stop(){ clearTimeout(timer); timer = null; }
+  document.getElementById('fuse-replay').addEventListener('click', run);
+  new MutationObserver(() => { if (sec.classList.contains('active')) run(); else stop(); }).observe(sec, {attributes: true, attributeFilter: ['class']});
+  frame({final: true}); say('', `Each cell of the result comes from one row of <span class="m">X</span> and one column of <span class="m">W</span>.`);   // static frame for print and deep links
 }
 
-// 8 · K → Kᵀ  and  Q · Kᵀ = S
+// 8 · why the transpose: animated. Q · K does not fit (a row of Q has d_k numbers, a column of K has L);
+//    transpose K and it does; then S fills cell by cell, row i of Q · column j of K^T.
 {
-  const dk = tx(DK_);
-  const K = matrix({r:L,c:DK,cw:22,name:'K',nameFill:C.k,rowDim:'L',colDim:dk,dots:true,dotFill:C.k,tint:'rgba(124,196,255,.1)'});
-  const KT = matrix({r:DK,c:L,cw:22,name:tx('K^T'),nameFill:C.k,rowDim:dk,colDim:'L',dots:true,dotFill:C.k,tint:'rgba(124,196,255,.1)'});
-  const arrow = {svg:`<text x="34" y="22" font-size="14" text-anchor="middle" fill="${C.ink3}">transpose</text><path d="M4,36 H60" stroke="${C.ink3}" stroke-width="2" fill="none" marker-end="url(#ar)"/><defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${C.ink3}"/></marker></defs>`, w:68, h:48};
-  put('dg-kT', line([K,arrow,KT], {maxW:360, maxH:300, gap:12}));
-  const Q = matrix({r:L,c:DK,cw:30,name:'Q',nameFill:C.q,rowDim:'L',colDim:dk,dots:true,dotFill:C.q,tint:'rgba(126,232,200,.1)',extraRight:44,hl:[{type:'row',i:IT,cls:'hl-row',color:C.q,label:tx('q_{it}')}]});
-  const KT2 = matrix({r:DK,c:L,cw:30,name:tx('K^T'),nameFill:C.k,rowDim:dk,colDim:'L',dots:true,dotFill:C.k,tint:'rgba(124,196,255,.1)',hl:[{type:'col',j:1,cls:'hl-col',color:C.k,label:tx('k_{cat}')}]});
-  const S = matrix({r:L,c:L,cw:30,name:'S',rowDim:'L',colDim:'L',hl:[{type:'cell',i:IT,j:1,cls:'hl-cell',color:C.v,label:'(it, cat)'}],extraRight:76});
-  put('dg-qkT', line([Q,{op:'·'},KT2,{op:'='},S], {maxW:740, maxH:330, gap:16}));
+  const dk = tx(DK_), cap = document.getElementById('qkT-cap'), sec = document.getElementById('s-transpose');
+  const fillS = 'rgba(170,181,195,.28)';
+  function frame(o){   // o: {kt: bool, badCol, qi, kj, filled, final}
+    const hq = [], hk = [], hs = [];
+    if (o.qi !== undefined) hq.push({type:'row', i:o.qi, cls:'now', color:C.q});
+    if (o.badCol !== undefined) hk.push({type:'col', j:o.badCol, cls:'now', color:C.bad});
+    if (o.kj !== undefined) hk.push({type:'col', j:o.kj, cls:'now', color:C.k});
+    if (o.qi !== undefined && o.kj !== undefined) hs.push({type:'cell', i:o.qi, j:o.kj, cls:'now', color:C.v});
+    const done = (i, j) => o.final || (o.filled !== undefined && i*L + j < o.filled);
+    const Q = matrix({r:L,c:DK,cw:30,name:'Q',nameFill:C.q,rowLabels:T,labelFill:heroFill,colDim:dk,dots:true,dotFill:C.q,tint:'rgba(126,232,200,.1)',hl:hq});
+    const Kx = o.kt
+      ? matrix({r:DK,c:L,cw:30,name:tx('K^T'),nameFill:C.k,rowDim:dk,colLabels:T,labelFill:heroFill,colLabH:64,dots:true,dotFill:C.k,tint:'rgba(124,196,255,.1)',hl:hk})
+      : matrix({r:L,c:DK,cw:30,name:'K',nameFill:C.k,rowLabels:T,labelFill:heroFill,colDim:dk,dots:true,dotFill:C.k,tint:'rgba(124,196,255,.1)',hl:hk,extraRight:132});
+    const S = matrix({r:L,c:L,cw:30,name:'S',rowLabels:T,colLabels:T,labelFill:heroFill,colLabH:64,dots:true,dotFill:C.grid2,
+                      blockFill:(i,j) => done(i,j) ? fillS : C.bg, hl:hs});
+    const dot = {op:'·', size:48, fill: o.bad ? C.bad : C.ink};
+    put('dg-qkT', line([Q, dot, Kx, {op:'=', size:36}, S], {maxH:390, gap:18}));
+  }
+  let timer = null;
+  const say = (r, msg) => { cap.innerHTML = (r ? `<span class="r">${r}</span>` : '') + msg; };
+  const later = (fn, ms) => { timer = setTimeout(fn, ms); };
+  const qname = i => `q<sub>${T[i]}</sub>`, kname = j => `k<sub>${T[j]}</sub>`;
+  function run(){
+    stop();
+    frame({kt:false}); say('', `<span class="m">Q</span> holds one query per row, <span class="m">K</span> one key per row. A matrix product dots a <em>row of the left</em> with a <em>column of the right</em>.`);
+    later(() => { frame({kt:false, qi:IT, badCol:0, bad:true}); say('does not fit', `a row of <span class="m">Q</span> has <span class="m">d<sub>k</sub></span> numbers, a column of <span class="m">K</span> has <span class="m">L</span>. They cannot be dotted.`);
+    later(() => { frame({kt:true, qi:IT, kj:1}); say('transpose', `turn <span class="m">K</span> on its side. A column of <span class="m">K<sup>T</sup></span> is one key, <span class="m">d<sub>k</sub></span> numbers long: exactly what a row of <span class="m">Q</span> needs.`);
+    later(() => { let k = 0;
+      const cell = () => { const i = Math.floor(k / L), j = k % L;
+        frame({kt:true, qi:i, kj:j, filled:k}); say('one cell', `<span class="m">${qname(i)}</span> · <span class="m">${kname(j)}</span> → cell (${T[i]}, ${T[j]}): how well ${T[i]}'s question matches ${T[j]}'s key`);
+        k++; if (k < L*L) later(cell, k <= L ? 230 : 40); else later(finish, 500); };
+      cell(); }, 2200); }, 2000); }, 1200);
+  }
+  function finish(){ frame({kt:true, final:true}); say('', `<span class="m">S</span> is <span class="m">L</span> × <span class="m">L</span>: row <span class="m">i</span> is token <span class="m">i</span>'s query scored against every key. That is the whole reason for the transpose: it puts each key where the multiplication will find it.`); }
+  function stop(){ clearTimeout(timer); timer = null; }
+  document.getElementById('qkT-replay').addEventListener('click', run);
+  new MutationObserver(() => { if (sec.classList.contains('active')) run(); else stop(); }).observe(sec, {attributes: true, attributeFilter: ['class']});
+  finish();   // static frame for print and deep links
 }
 
 // 9 · scores heatmap (toy, scaled)
@@ -809,14 +867,42 @@ put('dg-x', line([{...matrix({r:L,c:DM,cw:30,name:'X',rowLabels:T,labelFill:hero
   put('dg-scores', line([matrix({r:L,c:L,cw:44,name:tx('S = Q·K^T'),rowLabels:T,colLabels:T,labelFill:heroFill,labelW:72,colLabH:64,vals:S,color:v=>DIV(v/mx),text:true,fmt:v=>f2(v),textColor:v=>divText(v/mx),fs:13,stroke:C.bg,hl:[{type:'row',i:IT,cls:'hl-it on',color:C.q}]})], {maxW:520, maxH:470}));
 }
 
-// 10 · trick fails
+// 10 · packing breaks: animated. One cell of the packed product = row of [Q1|Q2|Q3] · column of [K1|K2|K3]^T,
+//    which runs across all three heads: three scores added into one number. Then the fix: three separate products.
 {
+  const cap = document.getElementById('fail-cap'), sec = document.getElementById('s-fail');
   const qb = [0,1,2].map(hh => ({axis:'col', from:hh*DK, to:hh*DK+DK-1, fill:C.h[hh], label:tx(`Q^${hh+1}`)}));
   const kb = [0,1,2].map(hh => ({axis:'row', from:hh*DK, to:hh*DK+DK-1, fill:C.h[hh], label:tx(`K^${hh+1}`)}));
-  const Q = matrix({r:L,c:3*DK,cw:22,name:tx('[ Q^1 | Q^2 | Q^3 ]'),rowDim:'L',colDim:tx(DMODEL),dots:true,blocks:qb});
-  const K = matrix({r:3*DK,c:L,cw:22,name:tx('[ K^1 | K^2 | K^3 ]^T'),rowDim:tx(DMODEL),colDim:'L',dots:true,blocks:kb,extraRight:36});
-  const tile = (hh) => matrix({r:L,c:L,cw:22,name:tx(`Q^${hh+1}·K^${hh+1}^T`),rowDim:hh===0?'L':'',colDim:'L',dots:true,dotFill:C.h[hh],tint:C.h[hh]+'1f',stroke:C.h[hh]+'55'});
-  put('dg-fail', line([Q,{op:'·'},K,{op:'='},tile(0),{op:'+',fill:C.bad,size:40},tile(1),{op:'+',fill:C.bad,size:40},tile(2)], {maxH:300, gap:10}));
+  const mixed = '#a08a7a';   // the three head colours blended: one muddy number
+  const h = (n, s) => `<span class="c-h${n}">${s}</span>`;
+  const term = n => `${h(n, `q<sup>${n}</sup><sub>it</sub>`)}·${h(n, `k<sup>${n}</sup><sub>cat</sub>`)}`;
+  function frame(o){   // o: {row, col, sum, fix}
+    if (o.fix){
+      const tile = hh => matrix({r:L,c:L,cw:28,name:tx(`Q^${hh+1}·K^${hh+1}^T`),rowDim:hh===0?'L':'',colDim:'L',dots:true,dotFill:C.h[hh],tint:C.h[hh]+'1f',stroke:C.h[hh]+'55'});
+      put('dg-fail', line([tile(0),{gap:30},tile(1),{gap:30},tile(2)], {maxH:360, gap:10})); return; }
+    const hq = o.row ? [{type:'row', i:IT, cls:'now', color:C.ink}] : [];
+    const hk = o.col ? [{type:'col', j:1, cls:'now', color:C.ink}] : [];
+    const hs = o.row ? [{type:'cell', i:IT, j:1, cls:'now', color:o.sum ? C.bad : C.v, label:o.sum ? '1 + 2 + 3' : '(it, cat)'}] : [];
+    const Q = matrix({r:L,c:3*DK,cw:30,name:tx('[ Q^1 | Q^2 | Q^3 ]'),rowDim:'L',colDim:tx(DMODEL),dots:true,blocks:qb,hl:hq});
+    const K = matrix({r:3*DK,c:L,cw:30,name:tx('[ K^1 | K^2 | K^3 ]^T'),rowDim:tx(DMODEL),colDim:'L',dots:true,blocks:kb,extraRight:36,hl:hk});
+    const S = matrix({r:L,c:L,cw:30,name:'one L × L table',rowDim:'L',colDim:'L',dots:true,dotFill:C.grid2,extraRight:90,
+                      blockFill:(i,j) => (o.sum && i===IT && j===1) ? mixed : C.bg, hl:hs});
+    put('dg-fail', line([Q,{op:'·', size:44, fill:C.ink},K,{op:'=', size:36},S], {maxH:360, gap:16}));
+  }
+  let timer = null;
+  const say = (r, msg) => { cap.innerHTML = (r ? `<span class="r">${r}</span>` : '') + msg; };
+  const later = (fn, ms) => { timer = setTimeout(fn, ms); };
+  function run(){
+    stop();
+    frame({}); say('', `One multiplication, the packed matrices, one result table. Take cell (<em>it</em>, <em>cat</em>).`);
+    later(() => { frame({row:true, col:true}); say('one cell', `row <em>it</em> of the left · column <em>cat</em> of the right. The shared dimension is <span class="m">d</span><sub>model</sub>: it runs across ${h(1,'head 1')}, ${h(2,'head 2')} and ${h(3,'head 3')}.`);
+    later(() => { frame({row:true, col:true, sum:true}); say('added', `= ${term(1)} + ${term(2)} + ${term(3)}: three heads' scores, <strong class="c-bad">summed into one number</strong>. We wanted three numbers.`);
+    later(() => { frame({fix:true}); say('so', `scores stay <strong>separate</strong>: <span class="m">h</span> products <span class="shape">[L × d_k]·[d_k × L]</span>, run together as a batch of shape <span class="shape">h × [L × L]</span>. Three tables, not one.`); }, 3600); }, 2600); }, 1400);
+  }
+  function stop(){ clearTimeout(timer); timer = null; }
+  document.getElementById('fail-replay').addEventListener('click', run);
+  new MutationObserver(() => { if (sec.classList.contains('active')) run(); else stop(); }).observe(sec, {attributes: true, attributeFilter: ['class']});
+  frame({row:true, col:true, sum:true}); say('added', `= ${term(1)} + ${term(2)} + ${term(3)}: three heads' scores, <strong class="c-bad">summed into one number</strong>. We wanted three numbers.`);   // static frame
 }
 
 // 13 · softmax with and without scaling: two small bar charts
@@ -997,7 +1083,7 @@ function locator(stage){
   s += `<rect x="${ax+2}" y="${y-15}" width="${'ATTENTION BLOCK'.length*8+10}" height="13" fill="${C.bg}"/><text x="${ax+6}" y="${y-5}" font-size="11" fill="${C.q}" font-weight="600" letter-spacing=".08em">ATTENTION BLOCK</text>`;
   x += 8; arrow();
   const mlpOn = stage === 'mlp'; cell(60, 'MLP', mlpOn, mlpOn?C.q:C.grid2, mlpOn?C.q:C.bg2);
-  s += `<rect x="${ax-16}" y="${y-32}" width="${x-ax+24}" height="${h+46}" rx="12" fill="none" stroke="${C.ink3}" stroke-width="1.2" stroke-dasharray="5 4"/><rect x="${ax-12}" y="${y-39}" width="${'ONE LAYER, REPEATED × N'.length*8+10}" height="13" fill="${C.bg}"/><text x="${ax-8}" y="${y-29}" font-size="11" fill="${C.ink2}" font-weight="600" letter-spacing=".08em">ONE LAYER, REPEATED × N</text>`;
+  s += `<rect x="${ax-16}" y="${y-32}" width="${x-ax+24}" height="${h+46}" rx="12" fill="none" stroke="${C.ink3}" stroke-width="1.2" stroke-dasharray="5 4"/><rect x="${ax-12}" y="${y-39}" width="${'ONE OF N LAYERS'.length*8+10}" height="13" fill="${C.bg}"/><text x="${ax-8}" y="${y-29}" font-size="11" fill="${C.ink2}" font-weight="600" letter-spacing=".08em">ONE OF N LAYERS</text>`;
   x += 16; arrow();
   cell(84, 'LM head', false, C.grid2, C.bg2);
   return `<svg viewBox="-2 -44 ${x+4} ${h+66}" width="${x+6}" height="${h+66}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;

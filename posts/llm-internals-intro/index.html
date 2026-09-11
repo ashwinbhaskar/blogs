@@ -205,7 +205,7 @@ td b{color:var(--ink)}
 <div id="deck">
 <!-- 0 · series title -->
 <section class="title">
-  <p class="kicker">LLM internals &middot; Introduction</p>
+  <p class="kicker">LLM internals: Introduction</p>
   <h1>Inside an autoregressive LLM</h1>
   <p class="sub">What happens between a prompt and the next word, seen from a distance: what the words in the title mean, what goes in, what comes out, and what each part of this series opens up.</p>
   <p class="by">Ashwin</p>
@@ -228,7 +228,7 @@ td b{color:var(--ink)}
 <section id="s-watch">
   <p class="kicker">Before we start</p>
   <h1>Watch it write, one token at a time</h1>
-  <p class="sub">GPT-2 small, a real model, writes on from our sentence: eight rounds of the loop, with its real probabilities.</p>
+  <p class="sub">GPT-2 small, a real model, writes on from our nine-token sentence: eight rounds of the loop, with its real probabilities.</p>
   <div class="dg" id="dg-watch"></div>
   <div class="cap"><span id="watch-cap"></span><span class="ctl"><button type="button" id="watch-play">Pause</button><button type="button" id="watch-step">Step</button><button type="button" id="watch-replay">Replay</button></span></div>
   <p class="note">Green tokens are the model's own picks; from round 2 on it reads them as part of its input: the <em>auto</em> in autoregressive. Here the most likely token is always taken; chat models usually pick at random among the likely ones, which is why the same question can get different answers.</p>
@@ -240,7 +240,7 @@ td b{color:var(--ink)}
   <h1>A language model guesses the next token</h1>
   <div class="dg" id="dg-loop"></div>
   <div class="stack" style="gap:10px">
-    <p style="font-size:20px;margin:0">Feed it text and it returns a probability for every possible next token. Above, GPT-2 small (2019), the example model for this whole series (small enough to run on a laptop, open enough to look inside), reads our nine-token sentence minus its last word and bets on <em>too</em>, <em>so</em>, <em>trying</em>. (<em>hungry</em> is 13th, at 0.9%.)</p>
+    <p style="font-size:20px;margin:0">Feed it text and it returns a probability for every possible next token. Above, GPT-2 small (2019), the example model for this whole series (small enough to run on a laptop, open enough to look inside), reads our nine-token sentence minus its last word. It bets on <em>too</em>, <em>so</em>, <em>trying</em>. (<em>hungry</em> is 13th, at 0.9%.)</p>
     <p class="frag" style="font-size:20px;margin:0" data-target="#dg-loop .hl-loop">Pick one of those, append it, run again: the loop you just watched, “autoregressive” in action. A chat reply is this loop run a few hundred times.</p>
     <p class="frag" style="font-size:20px;margin:0">The picture draws the model as a box. The program inside the box is a <strong>transformer</strong>: a particular recipe, published in 2017, that nearly every language model now follows. This series opens that box; the next three slides are orientation first.</p>
   </div>
@@ -254,7 +254,7 @@ td b{color:var(--ink)}
   <div class="cols frag" style="gap:14px;margin-bottom:14px">
     <div class="col card" style="padding:12px 18px"><h2 style="font-size:21px">124 million</h2><p style="font-size:17px">GPT-2 small (2019), the model in this series</p></div>
     <div class="col card" style="padding:12px 18px"><h2 style="font-size:21px">7 billion</h2><p style="font-size:17px">LLaMA-2 7B (2023), a typical “small” model today</p></div>
-    <div class="col card" style="padding:12px 18px"><h2 style="font-size:21px">Hundreds of billions</h2><p style="font-size:17px">The largest models today</p></div>
+    <div class="col card" style="padding:12px 18px"><h2 style="font-size:21px">Hundreds of billions and up</h2><p style="font-size:17px">The largest models today</p></div>
   </div>
   <div class="stack">
     <div class="card frag"><h2>Training is where the numbers come from</h2><p>The program reads a huge amount of text and, at every position, guesses the next token. After each guess, every parameter is nudged a little in the direction that would have made the guess better. Over billions of tokens the guesses become good: that is <strong>training</strong>. A formula tuned this way is called a <strong>neural network</strong>.</p></div>
@@ -283,7 +283,7 @@ td b{color:var(--ink)}
   <div class="dg" id="dg-embed"></div>
   <div class="cols" style="margin-top:8px">
     <div class="col"><p>A <strong>tokenizer</strong> chops text into pieces from a fixed vocabulary (GPT-2's has 50,257 entries). Common words are one piece; rare ones are split: <span class="mono">un|bel|iev|ably</span>. Each piece is a <strong>token</strong> and gets an id: its position in the vocabulary.</p></div>
-    <div class="col"><p class="frag" data-target="#dg-embed .hl-row">Each id picks a row of an <strong>embedding table</strong> <span class="m">E</span>: 768 numbers, the token's <strong>vector</strong>. The rows start random; training adjusts them until tokens used in similar ways get similar rows. Stack our nine rows and add a little position information to each (the formula will not look at row numbers, so the order has to be written into the numbers), and that is <span class="m">X</span>: the numbers the formula works on.</p></div>
+    <div class="col"><p class="frag" data-target="#dg-embed .hl-row">Each id picks a row of an <strong>embedding table</strong> <span class="m">E</span>: 768 numbers (in GPT-2 small), the token's <strong>vector</strong>. The rows start random; training adjusts them until tokens used in similar ways get similar rows. Stack our nine rows and add a little position information to each (the formula will not look at row numbers, so the order has to be written into the numbers). That is <span class="m">X</span>: the numbers the formula works on.</p></div>
   </div>
 </section>
 
@@ -293,8 +293,8 @@ td b{color:var(--ink)}
   <h1>The whole transformer, zoomed out</h1>
   <div class="dg" id="dg-arch"></div>
   <div class="cols" style="margin-top:6px">
-    <div class="col"><p class="frag">Text goes in on the left, next-token probabilities come out on the right, and in between sits a stack of <span class="m">N</span> <strong>layers</strong>, all of the same design but each with its own parameters: GPT-2 small stacks 12, LLaMA-2 7B stacks 32. Each layer is two <strong>blocks</strong>: attention, then a block called the MLP (short for multilayer perceptron, an old name for a small, plain neural network).</p></div>
-    <div class="col"><p class="frag" data-target="#dg-arch .hl-attn"><strong>Part 1 takes the attention block.</strong> Part 2 takes the MLP block, Part 3 follows a token up through the layers, and Part 4 covers the LM head, the last step, which turns the last token's vector, as it comes out of the last layer, into probabilities. The small “norm” boxes rescale the numbers to keep them well behaved; they get their turn in Part 3.</p></div>
+    <div class="col"><p class="frag">Text goes in on the left, next-token probabilities come out on the right, and in between sits a stack of <span class="m">N</span> <strong>layers</strong>, all of the same design but each with its own parameters: GPT-2 small stacks 12, LLaMA-2 7B stacks 32. Each layer is two <strong>blocks</strong>: attention, then a block called the MLP (short for multilayer perceptron, an old name for a plain neural network).</p></div>
+    <div class="col"><p class="frag" data-target="#dg-arch .hl-attn"><strong>Part 1 takes the attention block</strong>, Part 2 the MLP block, Part 3 follows a token up through the layers, and Part 4 covers the LM head, the last step, which turns the last token's vector, as it comes out of the last layer, into probabilities. The small “norm” boxes rescale the numbers to keep them well behaved; they get their turn in Part 3.</p></div>
   </div>
 </section>
 
@@ -647,7 +647,7 @@ const GEN = {"prompt": ["The", "cat", "chased", "the", "mouse", "because", "it",
   step(80, 'text', ''); step(100, 'tokenizer', 'ids'); step(150, 'embedding', '+ position');
   const bx = x, bw = 320;
   for (let i=2;i>=0;i--){ s += `<rect x="${bx+i*8}" y="${Y-8-i*8}" width="${bw}" height="${H+16}" rx="12" fill="${C.bg2}" stroke="${C.ink3}" stroke-width="1.5"/>`; }
-  s += `<text x="${bx+bw/2+8}" y="${Y-38}" font-size="13" text-anchor="middle" fill="${C.ink2}" font-weight="600">one layer, repeated N times: 12 in GPT-2 small, 32 in LLaMA-2 7B</text>`;
+  s += `<text x="${bx+bw/2+8}" y="${Y-38}" font-size="13" text-anchor="middle" fill="${C.ink2}" font-weight="600">N layers of the same design, each with its own parameters: 12 in GPT-2 small, 32 in LLaMA-2 7B</text>`;
   s += box(bx+14, Y+4, 140, H-8, 'attention', 'tokens exchange info', C.q, C.bg, 'attn-box');
   s += arr(bx+154, bx+176, Y+H/2);
   s += box(bx+178, Y+4, 128, H-8, 'MLP', 'each token alone', C.grid2, C.bg);
